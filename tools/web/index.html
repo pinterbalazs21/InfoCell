@@ -1,0 +1,911 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>InfoCell Viewer</title>
+<style>
+
+:root {
+  --bg: #eef1f6; --panel: #ffffff; --fg: #18223a; --muted: #5d6784; --line: #d3d9e6;
+  --ink: #2a3cb0; --ink-soft: #e4e8fb; --ok: #1f8a4c; --bad: #c2362b; --warn: #a86b00;
+  --ui: "Segoe UI", system-ui, -apple-system, sans-serif;
+  --mono: "Cascadia Mono", Consolas, "Courier New", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #0e1320; --panel: #161d2e; --fg: #e3e8f3; --muted: #9aa4c0; --line: #2b3550;
+          --ink: #93a5ff; --ink-soft: #222c4d; --ok: #4fcf86; --bad: #ff7b6e; --warn: #f0b44c; color-scheme: dark; }
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { background: var(--bg); color: var(--fg); font: 14px/1.5 var(--ui); display: grid; grid-template-rows: auto 1fr; }
+header { display: flex; gap: 12px; align-items: center; padding: 10px 16px; background: var(--panel); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+header h1 { font-size: 16px; margin: 0 8px 0 0; letter-spacing: .02em; }
+select, input[type=search] { font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; }
+button { font: 600 13px var(--ui); border-radius: 6px; padding: 6px 12px; cursor: pointer; border: 1px solid var(--ink); background: var(--ink); color: var(--panel); }
+button.ghost { background: transparent; color: var(--ink); }
+button:disabled { opacity: .5; cursor: default; }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+label.toggle { display: inline-flex; gap: 6px; align-items: center; color: var(--muted); cursor: pointer; user-select: none; }
+.layout { display: grid; grid-template-columns: 220px minmax(0, 1fr) 320px; min-height: 0; }
+#list { overflow-y: auto; border-right: 1px solid var(--line); background: var(--panel); }
+#list button { display: flex; width: 100%; justify-content: space-between; align-items: center; background: none; color: var(--fg); border: 0; border-radius: 0;
+               font: 13px var(--mono); padding: 5px 12px; text-align: left; border-bottom: 1px solid var(--line); }
+#list button:hover { background: var(--ink-soft); }
+#list button.active { background: var(--ink); color: var(--panel); }
+.dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.s-solved { background: var(--ok); } .s-wrong { background: var(--bad); } .s-noprogram { background: var(--muted); } .s-unknown { background: var(--warn); }
+#main { overflow-y: auto; padding: 18px 22px 60px; display: flex; flex-direction: column; gap: 22px; min-width: 0; }
+#main > * { flex-shrink: 0; }
+#inspector { overflow-y: auto; border-left: 1px solid var(--line); background: var(--panel); padding: 14px; display: flex; flex-direction: column; gap: 14px; }
+h2 { font-size: 15px; margin: 0; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+.task-head { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.task-head .id { font: 600 20px var(--mono); }
+.chip { font-size: 12px; font-weight: 600; padding: 2px 10px; border-radius: 99px; border: 1px solid currentColor; }
+.chip.solved { color: var(--ok); } .chip.wrong { color: var(--bad); } .chip.noprogram { color: var(--muted); } .chip.unknown { color: var(--warn); } .chip.running { color: var(--ink); }
+.muted { color: var(--muted); }
+.pairs { display: flex; flex-wrap: wrap; gap: 14px; }
+.pair { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; display: flex; gap: 10px; align-items: center; }
+.gridbox { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+.gridbox .cap { font-size: 12px; color: var(--muted); }
+.arrow { color: var(--muted); font-size: 18px; }
+canvas { display: block; cursor: crosshair; image-rendering: pixelated; }
+.programs { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; }
+th, td { text-align: left; padding: 7px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+tr.prog { cursor: pointer; }
+tr.prog:hover { background: var(--ink-soft); }
+tr.prog.sel { background: var(--ink-soft); box-shadow: inset 3px 0 0 var(--ink); }
+td.rule { font: 13px var(--mono); white-space: pre-wrap; word-break: break-word; }
+.card { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+.card.pin { border-color: var(--ink); background: var(--ink-soft); }
+.card h3 { margin: 0 0 6px; font-size: 13px; display: flex; gap: 8px; align-items: center; }
+.slots { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; font-size: 13px; }
+.slots dt { color: var(--muted); } .slots dd { margin: 0; font-family: var(--mono); }
+.sw { display: inline-block; width: 12px; height: 12px; border-radius: 2px; vertical-align: -1px; border: 1px solid var(--line); margin-right: 4px; }
+.objlist { display: flex; flex-wrap: wrap; gap: 4px; }
+.objlist button { background: none; color: var(--fg); border: 1px solid var(--line); font: 12px var(--mono); padding: 2px 7px; }
+.objlist button.on { border-color: var(--ink); color: var(--ink); }
+.note { font-size: 12px; color: var(--muted); }
+.err { color: var(--bad); white-space: pre-wrap; font-family: var(--mono); font-size: 12px; }
+.empty { color: var(--muted); padding: 40px 0; }
+.tabs { display: flex; gap: 4px; margin-right: 8px; }
+.tabs button { background: transparent; color: var(--muted); border-color: var(--line); }
+.tabs a.tablink { font: 600 13px var(--ui); color: var(--muted); text-decoration: none; border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; }
+.tabs a.tablink:hover { color: var(--ink); border-color: var(--ink); }
+body.no-solver .solver-only { display: none !important; }
+.tabs button.on { background: var(--ink); color: var(--panel); border-color: var(--ink); }
+#list .group { font: 600 11px var(--ui); text-transform: uppercase; letter-spacing: .07em; color: var(--muted); padding: 10px 12px 4px; border-bottom: 1px solid var(--line); }
+a.tlink { color: var(--ink); text-decoration: none; cursor: pointer; } a.tlink:hover { text-decoration: underline; }
+.kv { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag { font: 12px var(--mono); border: 1px solid var(--line); border-radius: 5px; padding: 1px 7px; background: var(--panel); }
+.tag.ink { border-color: var(--ink); color: var(--ink); }
+.box { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; overflow-x: auto; }
+.box svg { display: block; max-width: 100%; height: auto; }
+.box svg text { font: 12px var(--ui); fill: var(--fg); }
+.box svg .lbl { fill: var(--muted); font-size: 11px; }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 6px 18px; }
+@media (max-width: 1100px) { .layout { grid-template-columns: 180px minmax(0, 1fr); } #inspector { display: none; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>InfoCell Viewer</h1>
+  <nav class="tabs" aria-label="Pages"><button id="tabTasks" type="button">Tasks</button><button id="tabTypes" type="button">Cell types</button><button id="tabTools" type="button">ToolFinder</button><button id="tabGrammar" type="button">Grammar</button><a class="tablink" href="/concept" target="_blank" rel="noopener">Concept</a></nav>
+  <span id="taskControls" style="display:contents">
+  <select id="set" aria-label="Task set"></select>
+  <input id="filter" type="search" placeholder="Filter task id" aria-label="Filter task id">
+  <select id="statusFilter" aria-label="Filter by result" class="solver-only">
+    <option value="">All tasks</option><option value="solved">Solved</option><option value="wrong">Wrong</option>
+    <option value="no program">No program</option><option value="unsolved">Not run yet</option>
+  </select>
+  <span id="counts" class="muted solver-only"></span>
+  <span style="flex:1"></span>
+  <label class="toggle"><input id="tObjects" type="checkbox" checked> Object cells</label>
+  <label class="toggle"><input id="tChanges" type="checkbox" checked> Changed pixels</label>
+  <label class="toggle solver-only"><input id="tAuto" type="checkbox" checked> Solve on open</label>
+  </span>
+  <span id="typeControls" style="display:none">
+    <input id="typeFilter" type="search" placeholder="Filter types" aria-label="Filter types">
+    <label class="toggle"><input id="tInstances" type="checkbox"> Template instances</label>
+  </span>
+</header>
+<div class="layout">
+  <nav id="list" aria-label="Tasks"></nav>
+  <main id="main"><div class="empty">Pick a task on the left. Use ↑ ↓ to step through the list.</div></main>
+  <aside id="inspector" aria-label="Cell inspector">
+    <h2>Cells</h2>
+    <div id="insp" class="note">Hover over a pixel to see its Pixel cell, its object cell and the Grid cell. Click to pin an object.</div>
+  </aside>
+</div>
+<script>
+const ARC = ["#000000","#1e93ff","#f93c31","#4fcc30","#ffdc00","#999999","#e53aa3","#ff851b","#87d8f1","#921231"];
+const CNAME = ["black","blue","red","green","yellow","grey","magenta","orange","sky","maroon"];
+const $ = s => document.querySelector(s);
+const h = (tag, attrs = {}, ...kids) => {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") e.className = v; else if (k.startsWith("on")) e.addEventListener(k.slice(2), v); else if (v !== false && v != null) e.setAttribute(k, v);
+  }
+  kids.flat().forEach(k => { if (k != null && k !== false) e.append(k instanceof Node ? k : document.createTextNode(k)); });
+  return e;
+};
+const statusClass = s => s ? "s-" + s.replace(" ", "") : "";
+
+let caps = { solve: false, toolfinder: false, types: false, grammar: false };
+let sets = [], cur = { set: null, id: null, task: null, result: null, prog: null };
+let pinned = null;
+const grids = new Map();
+
+// ---------- task list ----------
+async function loadSets() {
+  sets = await (await fetch("/api/sets")).json();
+  $("#set").replaceChildren(...sets.map(s => h("option", { value: s.key, disabled: !s.found }, s.label + (s.found ? ` (${s.tasks.length})` : " (missing)"))));
+  const [hs, hid] = decodeURIComponent(location.hash.slice(1)).split("/");
+  const first = sets.find(s => s.key === hs && s.found) || sets.find(s => s.found);
+  if (first) { $("#set").value = first.key; if (!/^#(types|tools|grammar)/.test(location.hash)) { renderList(); if (hid) openTask(first.key, hid); } }
+}
+function currentSet() { return sets.find(s => s.key === $("#set").value); }
+function visibleTasks() {
+  const s = currentSet(); if (!s) return [];
+  const f = $("#filter").value.trim().toLowerCase(), st = $("#statusFilter").value;
+  return s.tasks.filter(t => (!f || t.id.includes(f)) && (!st || (st === "unsolved" ? !t.status : t.status === st)));
+}
+function renderList() {
+  if (mode !== "tasks") return;
+  const s = currentSet(), list = $("#list");
+  list.replaceChildren(...visibleTasks().map(t => h("button", {
+    class: s.key === cur.set && t.id === cur.id ? "active" : "", "data-id": t.id, onclick: () => openTask(s.key, t.id)
+  }, t.id, h("span", { class: "dot " + statusClass(t.status), title: t.status || "not run yet" }))));
+  const c = { solved: 0, wrong: 0, "no program": 0 };
+  s.tasks.forEach(t => { if (t.status in c) c[t.status]++; });
+  const run = c.solved + c.wrong + c["no program"];
+  $("#counts").textContent = run ? `${c.solved} solved · ${c.wrong} wrong · ${c["no program"]} no program · of ${run} run` : "";
+}
+$("#set").addEventListener("change", renderList);
+$("#filter").addEventListener("input", renderList);
+$("#statusFilter").addEventListener("change", renderList);
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && pinned) { pinned = null; redrawAll(); inspect(); return; }
+  if (mode !== "tasks" || !["ArrowDown", "ArrowUp"].includes(e.key) || e.target.matches("input, select")) return;
+  const ts = visibleTasks(), i = ts.findIndex(t => t.id === cur.id);
+  const n = ts[Math.max(0, Math.min(ts.length - 1, i + (e.key === "ArrowDown" ? 1 : -1)))];
+  if (n) { e.preventDefault(); openTask(currentSet().key, n.id); }
+});
+
+// ---------- cells ----------
+const cellCache = new WeakMap();
+function cellsOf(g) {
+  if (cellCache.has(g)) return cellCache.get(g);
+  const H = g.length, W = g[0].length, flat = g.flat();
+  const hist = new Map(); flat.forEach(c => hist.set(c, (hist.get(c) || 0) + 1));
+  const bg = hist.has(0) ? 0 : [...hist.entries()].sort((a, b) => b[1] - a[1] || a[0] - b[0])[0][0];
+  const seen = g.map(r => r.map(() => false)), objs = [];
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    if (seen[y][x] || g[y][x] === bg) continue;
+    const px = [], stack = [[x, y]]; seen[y][x] = true;
+    while (stack.length) {
+      const [cx, cy] = stack.pop(); px.push([cx, cy]);
+      for (const [dx, dy] of [[0, -1], [-1, 0], [1, 0], [0, 1]]) {
+        const nx = cx + dx, ny = cy + dy;
+        if (nx < 0 || ny < 0 || nx >= W || ny >= H || seen[ny][nx] || g[ny][nx] !== g[cy][cx]) continue;
+        seen[ny][nx] = true; stack.push([nx, ny]);
+      }
+    }
+    objs.push(px);
+  }
+  const sizes = objs.map(o => o.length), count = n => sizes.filter(s => s === n).length;
+  const maxS = Math.max(0, ...sizes), minS = Math.min(Infinity, ...sizes);
+  const objects = objs.map((px, id) => {
+    const xs = px.map(p => p[0]), ys = px.map(p => p[1]);
+    const box = [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)], w = box[2] - box[0] + 1, h = box[3] - box[1] + 1;
+    const mine = new Set(px.map(([x, y]) => x + "," + y)), out = new Set(), st = [];
+    for (let y = box[1]; y <= box[3]; y++) for (let x = box[0]; x <= box[2]; x++)
+      if ((x === box[0] || y === box[1] || x === box[2] || y === box[3]) && !mine.has(x + "," + y)) { out.add(x + "," + y); st.push([x, y]); }
+    while (st.length) {
+      const [x, y] = st.pop();
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nx = x + dx, ny = y + dy, k = nx + "," + ny;
+        if (nx < box[0] || ny < box[1] || nx > box[2] || ny > box[3] || out.has(k) || mine.has(k)) continue;
+        out.add(k); st.push([nx, ny]);
+      }
+    }
+    return { id, pixels: px, colors: [...new Set(px.map(([x, y]) => g[y][x]))].sort((a, b) => a - b), size: px.length, box, width: w, height: h,
+      touchesBorder: px.some(([x, y]) => x === 0 || y === 0 || x === W - 1 || y === H - 1),
+      sizeRank: 1 + sizes.filter(s => s > px.length).length,
+      largest: px.length === maxS && count(maxS) === 1, smallest: px.length === minS && count(minS) === 1,
+      holes: w * h - px.length - out.size, rectangle: px.length === w * h };
+  });
+  const cells = { background: bg, width: W, height: H, objectCount: objects.length, objects };
+  cellCache.set(g, cells);
+  return cells;
+}
+
+// ---------- grids ----------
+function cellSize(g, max) { const n = Math.max(g.length, g[0].length); return Math.max(4, Math.min(28, Math.floor(max / n))); }
+function ownerMap(cells, g) {
+  const own = g.map(r => r.map(() => -1));
+  (cells?.objects || []).forEach(o => o.pixels.forEach(([x, y]) => own[y][x] = o.id));
+  return own;
+}
+function gridView(key, g, cells, caption, opts = {}) {
+  const cs = cellSize(g, opts.max || 220), H = g.length, W = g[0].length;
+  const canvas = h("canvas", { width: W * cs, height: H * cs, "aria-label": caption });
+  const own = ownerMap(cells, g);
+  const entry = { canvas, grid: g, cells, cs, own, caption, key };
+  entry.draw = () => {
+    const c = canvas.getContext("2d");
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { c.fillStyle = ARC[g[y][x]] || "#fff"; c.fillRect(x * cs, y * cs, cs, cs); }
+    if (cs >= 6) { c.strokeStyle = "rgba(128,128,128,.35)"; c.lineWidth = 1; c.beginPath();
+      for (let x = 1; x < W; x++) { c.moveTo(x * cs + .5, 0); c.lineTo(x * cs + .5, H * cs); }
+      for (let y = 1; y < H; y++) { c.moveTo(0, y * cs + .5); c.lineTo(W * cs, y * cs + .5); } c.stroke(); }
+    const ref = opts.ref;
+    if ($("#tChanges").checked && ref && ref.length === H && ref[0].length === W) {
+      c.fillStyle = "rgba(255,255,255,.9)"; c.strokeStyle = "rgba(0,0,0,.9)";
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (ref[y][x] !== g[y][x]) {
+        c.beginPath(); c.arc(x * cs + cs / 2, y * cs + cs / 2, Math.max(1.5, cs * .16), 0, 7); c.fill(); c.stroke(); }
+    }
+    if (opts.expected) {
+      const e = opts.expected; c.strokeStyle = "#ff2d55"; c.lineWidth = Math.max(1.5, cs / 8);
+      if (e.length !== H || e[0].length !== W) { c.strokeRect(1, 1, W * cs - 2, H * cs - 2); }
+      else for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (e[y][x] !== g[y][x]) {
+        c.beginPath(); c.moveTo(x * cs + 2, y * cs + 2); c.lineTo(x * cs + cs - 2, y * cs + cs - 2);
+        c.moveTo(x * cs + cs - 2, y * cs + 2); c.lineTo(x * cs + 2, y * cs + cs - 2); c.stroke(); }
+    }
+    if ($("#tObjects").checked && cells) {
+      const sel = pinned && pinned.key === key ? pinned.obj : (hover && hover.key === key ? own[hover.y]?.[hover.x] : -1);
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+        const o = own[y][x]; if (o < 0) continue;
+        const strong = o === sel;
+        c.strokeStyle = strong ? "#ffffff" : "rgba(255,255,255,.55)"; c.lineWidth = strong ? Math.max(2, cs / 6) : 1;
+        c.beginPath();
+        if (own[y - 1]?.[x] !== o) { c.moveTo(x * cs, y * cs + .5); c.lineTo(x * cs + cs, y * cs + .5); }
+        if (own[y + 1]?.[x] !== o) { c.moveTo(x * cs, y * cs + cs - .5); c.lineTo(x * cs + cs, y * cs + cs - .5); }
+        if (own[y][x - 1] !== o) { c.moveTo(x * cs + .5, y * cs); c.lineTo(x * cs + .5, y * cs + cs); }
+        if (own[y][x + 1] !== o) { c.moveTo(x * cs + cs - .5, y * cs); c.lineTo(x * cs + cs - .5, y * cs + cs); }
+        c.stroke();
+      }
+    }
+    if (hover && hover.key === key) { c.strokeStyle = "#ffffff"; c.lineWidth = 2; c.strokeRect(hover.x * cs + 1, hover.y * cs + 1, cs - 2, cs - 2); }
+    if (pinned && pinned.key === key && pinned.x != null) {
+      c.strokeStyle = "#ffffff"; c.lineWidth = Math.max(2, cs / 5); c.strokeRect(pinned.x * cs + 1, pinned.y * cs + 1, cs - 2, cs - 2);
+      c.strokeStyle = "#2a3cb0"; c.lineWidth = 1.5; c.strokeRect(pinned.x * cs + 3, pinned.y * cs + 3, cs - 6, cs - 6);
+    }
+  };
+  const at = e => { const r = canvas.getBoundingClientRect(); return { x: Math.floor((e.clientX - r.left) / (r.width / W)), y: Math.floor((e.clientY - r.top) / (r.height / H)) }; };
+  canvas.addEventListener("mousemove", e => { const p = at(e); if (p.x < 0 || p.y < 0 || p.x >= W || p.y >= H) return; setHover({ key, ...p }); });
+  canvas.addEventListener("mouseleave", () => setHover(null));
+  canvas.addEventListener("click", e => { const p = at(e), o = own[p.y]?.[p.x] ?? -1;
+    const same = pinned && pinned.key === key && pinned.x === p.x && pinned.y === p.y;
+    pinned = same ? null : { key, x: p.x, y: p.y, obj: o }; redrawAll(); inspect(); });
+  grids.set(key, entry); entry.draw();
+  return h("div", { class: "gridbox" }, canvas, h("span", { class: "cap" }, `${caption} · ${W}×${H}`));
+}
+let hover = null;
+function setHover(p) {
+  const prev = hover; hover = p;
+  [prev?.key, p?.key].forEach(k => k && grids.get(k)?.draw());
+  inspect();
+}
+function redrawAll() { grids.forEach(g => g.draw()); }
+$("#tObjects").addEventListener("change", redrawAll);
+$("#tChanges").addEventListener("change", redrawAll);
+
+// ---------- inspector ----------
+const sw = c => h("span", {}, h("span", { class: "sw", style: `background:${ARC[c]}` }), CNAME[c] ?? String(c));
+const slots = rows => h("dl", { class: "slots" }, rows.flatMap(([k, v]) => [h("dt", {}, k), h("dd", {}, v)]));
+function objectCard(o, title, pin) {
+  return h("div", { class: "card" + (pin ? " pin" : "") }, h("h3", {}, title),
+    slots([["colors", h("span", {}, ...o.colors.map(sw))], ["size", String(o.size)], ["box", `${o.width}×${o.height} at (${o.box[0]},${o.box[1]})`],
+      ["rectangle", o.rectangle ? "yes" : "no"], ["holes", String(o.holes)], ["touches border", o.touchesBorder ? "yes" : "no"],
+      ["size rank", String(o.sizeRank)], ["largest", o.largest ? "yes" : "no"], ["smallest", o.smallest ? "yes" : "no"]]));
+}
+function inspect() {
+  const box = $("#insp");
+  const focus = pinned && pinned.x != null ? pinned : hover;
+  const key = focus?.key || pinned?.key; const e = key && grids.get(key);
+  if (!e) { box.replaceChildren(h("div", { class: "note" }, "Hover over a pixel to see its Pixel cell, its object cell and the Grid cell. Click a pixel to pin it; click it again or press Esc to unpin.")); return; }
+  const kids = [];
+  const g = e.grid, W = g[0].length, H = g.length;
+  if (pinned) kids.push(h("div", { class: "note" }, "Pinned. Click the pixel again or press Esc to unpin. ", h("button", { class: "ghost", onclick: () => { pinned = null; redrawAll(); inspect(); } }, "Unpin")));
+  if (focus && focus.key === key && focus.x != null) {
+    const { x, y } = focus, nb = (dx, dy) => (g[y + dy] && g[y + dy][x + dx] !== undefined) ? sw(g[y + dy][x + dx]) : h("span", { class: "muted" }, "none (edge)");
+    kids.push(h("div", { class: "card" + (pinned ? " pin" : "") }, h("h3", {}, `Pixel cell (${x}, ${y})`),
+      slots([["type", "Pixel"], ["x", String(x)], ["y", String(y)], ["color", sw(g[y][x])], ["up", nb(0, -1)], ["down", nb(0, 1)], ["left", nb(-1, 0)], ["right", nb(1, 0)],
+        ["object", e.own[y][x] >= 0 ? "o" + (e.own[y][x] + 1) : h("span", { class: "muted" }, "background")]])));
+  }
+  if (e.cells) {
+    const oid = pinned && pinned.key === key ? pinned.obj : (focus && focus.x != null ? e.own[focus.y]?.[focus.x] : -1);
+    const o = e.cells.objects.find(o => o.id === oid);
+    if (o) kids.push(objectCard(o, `Object cell o${o.id + 1}`, pinned && pinned.key === key));
+    kids.push(h("div", { class: "card" }, h("h3", {}, `Grid cell · ${e.caption}`),
+      slots([["type", "Grid"], ["width", String(W)], ["height", String(H)], ["background", sw(e.cells.background)], ["objects", String(e.cells.objectCount)]]),
+      h("div", { class: "objlist", style: "margin-top:8px" }, e.cells.objects.slice(0, 80).map(o =>
+        h("button", { class: pinned && pinned.key === key && pinned.obj === o.id ? "on" : "", onclick: () => { pinned = { key, obj: o.id }; redrawAll(); inspect(); } }, "o" + (o.id + 1)))),
+      h("div", { class: "note", style: "margin-top:6px" }, "Objects: same color, 4-connected. This is the first of the 7 parses the object rules try.")));
+  }
+  box.replaceChildren(...kids);
+}
+
+// ---------- task ----------
+async function openTask(setKey, id) {
+  cur = { set: setKey, id, task: null, result: null, prog: null }; pinned = null; hover = null;
+  history.replaceState(null, "", `#${setKey}/${id}`);
+  document.querySelectorAll("#list button").forEach(b => b.classList.toggle("active", b.dataset.id === id));
+  document.querySelector("#list button.active")?.scrollIntoView({ block: "nearest" });
+  const r = await fetch(`/api/task?set=${setKey}&id=${id}`);
+  if (cur.id !== id) return;
+  cur.task = await r.json(); render();
+  const t = currentSet()?.tasks.find(t => t.id === id);
+  if (caps.solve && ($("#tAuto").checked || t?.status)) solve();
+}
+async function getJson(url) {
+  try {
+    const r = await fetch(url), body = await r.json();
+    return r.ok ? body : { error: (body.error || `HTTP ${r.status}`) + (body.stderr ? "\n" + body.stderr : "") };
+  } catch (e) { return { error: `the viewer server is not reachable (${e.message})` }; }
+}
+const DEFAULT_LIMITS = { depth: 3, beam: 500, finishers: 2 };
+let limits = { ...DEFAULT_LIMITS };
+const limitQuery = () => Object.entries(limits).filter(([k, v]) => v !== DEFAULT_LIMITS[k]).map(([k, v]) => `&${k}=${v}`).join("");
+const limitText = l => l ? `depth ${l.depth} · beam ${l.beam} · ${l.finishers} finishers` : "";
+function searchBar() {
+  const field = (key, label, min, max, title) => h("label", { class: "toggle", title },
+    label, h("input", { type: "number", min, max, value: limits[key], style: "width:72px", id: "lim-" + key,
+      onchange: e => { const v = Math.max(min, Math.min(max, parseInt(e.target.value, 10) || DEFAULT_LIMITS[key])); limits[key] = v; e.target.value = v; } }));
+  return h("div", { class: "task-head", style: "gap:14px" }, h("span", { class: "muted" }, "Search:"),
+    field("depth", "depth", 1, 50, "Composition: the longest chain of steps"),
+    field("beam", "beam", 1, 20000, "Composition: states kept per level"),
+    field("finishers", "finishers", 0, 100, "Composition: the closest states that get a learned rule as their last step"),
+    h("button", { class: "ghost", disabled: cur.running, onclick: rerun }, "Search again"),
+    h("button", { class: "ghost", disabled: cur.running, onclick: () => { limits = { ...DEFAULT_LIMITS }; render(); } }, "Defaults"));
+}
+function rerun() {
+  if (cur.result) cur.previous = { limits: cur.result.limits, status: cur.result.status, programCount: cur.result.programCount, seconds: cur.result.seconds };
+  cur.result = null; cur.partial = null; cur.partialSel = null; cur.prog = null;
+  solve();
+}
+async function solve() {
+  const task = cur, defaults = limitQuery() === ""; task.running = true; task.started = Date.now(); render();
+  const tick = setInterval(() => { const el = $("#elapsed"); if (el) el.textContent = `solving… ${Math.round((Date.now() - task.started) / 1000)} s`; }, 1000);
+  const body = await getJson(`/api/solve?set=${task.set}&id=${task.id}${limitQuery()}`);
+  clearInterval(tick);
+  task.running = false;
+  if (body.error) task.error = body.error; else { task.result = body; task.error = null; }
+  const t = sets.find(s => s.key === task.set)?.tasks.find(t => t.id === task.id); if (t && body.status && defaults) t.status = body.status;
+  if (cur !== task) return;
+  renderList(); render();
+  if (body.status === "no program") findPartial();
+}
+async function findPartial() {
+  const task = cur; task.partialRunning = true; render();
+  const body = await getJson(`/api/partial?set=${task.set}&id=${task.id}${limitQuery()}`);
+  task.partialRunning = false;
+  if (body.error) task.error = body.error; else task.partial = body;
+  if (cur === task) render();
+}
+const testMarks = (answers, t) => answers.map((g, k) => !g ? "none" : !t.test[k].output ? "?" : JSON.stringify(g) === JSON.stringify(t.test[k].output) ? "✓" : "✗").join(" ");
+
+// ---------- rules in words ----------
+function plain(name) {
+  const steps = name.split(/, then | -> /);
+  const say = s => {
+    let m;
+    if ((m = s.match(/^(backoff )?table\[(.*)\]( on color ranks)?$/))) {
+      const f = [...m[2].matchAll(/\{([^}]*)\}/g)].map(x => x[1]);
+      return `give each pixel a color from a table keyed by: ${f.join(" + ")}` + (m[3] ? ", with colors named by how often they occur" : "") + (m[1] ? "; unseen cases keep their color" : "");
+    }
+    if ((m = s.match(/^objects\[([^\]]*)\](.*)$/))) {
+      const parts = m[2].split(";").map(x => x.trim()).filter(Boolean).map(p => p
+        .replace(/^exists:?/, "keep or delete").replace(/^addition:?/, "add").replace(/^geometry:?/, "reshape").replace(/^position:?/, "move").replace(/^color:?/, "recolor"));
+      return `split the grid into objects (${m[1]}), then for every object: ${parts.join("; ") || "keep it"}`;
+    }
+    return s;
+  };
+  return steps.map(say).join(", then ");
+}
+function ruleCell(c) {
+  const kids = [h("div", { style: "font-family:var(--ui);font-size:13.5px;margin-bottom:4px" }, plain(c.name).replace(/^./, x => x.toUpperCase()) + "."),
+                h("div", { class: "muted" }, c.name.replace(/; /g, ";\n"))];
+  if (c.detail) kids.push(h("details", { style: "margin-top:4px", onclick: e => e.stopPropagation() },
+    h("summary", { class: "note", style: "cursor:pointer" }, `learned table · ${c.detail.trim().split("\n").length} cases`),
+    h("div", { style: "white-space:pre;overflow-x:auto;margin-top:4px" }, c.detail.trim())));
+  return h("td", { class: "rule" }, kids);
+}
+
+const statusText = { solved: "solved", wrong: "wrong answer", "no program": "no program fits", unknown: "answer not known" };
+function render() {
+  if (mode !== "tasks") return;
+  grids.clear();
+  const main = $("#main"), t = cur.task, R = cur.result;
+  if (!t) { main.replaceChildren(h("div", { class: "empty" }, "Loading…")); return; }
+  const isEval = cur.set.endsWith("evaluation");
+  const head = h("div", { class: "task-head" }, h("span", { class: "id" }, cur.id),
+    R ? h("span", { class: "chip " + R.status.replace(" ", "") }, statusText[R.status] || R.status) : null,
+    cur.running ? h("span", { class: "chip running", id: "elapsed" }, "solving…") : null,
+    caps.solve && !R && !cur.running ? h("button", { onclick: solve }, "Solve") : null,
+    R ? h("span", { class: "muted" }, `${R.programCount} programs fit the training pairs · ${R.seconds.toFixed(1)} s · ${limitText(R.limits)}`) : null,
+    isEval ? h("span", { class: "note" }, "Evaluation set: it was never used to develop the solver.") : null);
+  const kids = [head];
+  if (caps.solve) kids.push(searchBar());
+  if (cur.previous) kids.push(h("p", { class: "note", style: "margin:-12px 0 0" },
+    `Previous search (${limitText(cur.previous.limits)}): ${statusText[cur.previous.status] || cur.previous.status}, ${cur.previous.programCount} programs, ${cur.previous.seconds.toFixed(1)} s.`));
+  if (cur.error) kids.push(h("div", { class: "err" }, cur.error));
+
+  const P = cur.partial, ps = P && cur.partialSel != null ? P.partial[cur.partialSel] : null;
+  kids.push(h("h2", {}, "Training pairs"));
+  kids.push(h("div", { class: "pairs" }, t.train.map((p, i) => {
+    const boxes = [gridView(`tr${i}in`, p.input, cellsOf(p.input), `pair ${i + 1} input`),
+      h("span", { class: "arrow" }, "→"), gridView(`tr${i}out`, p.output, cellsOf(p.output), `pair ${i + 1} output`, { ref: p.input })];
+    if (ps) {
+      const o = ps.train[i];
+      boxes.push(o.grid ? gridView(`tr${i}part`, o.grid, null, `partial #${cur.partialSel + 1}: ` + (o.fits ? "fits ✓" : `${Math.round(o.accuracy * 100)}% right`), { expected: p.output, ref: p.input })
+                        : h("div", { class: "note", style: "max-width:140px" }, `partial #${cur.partialSel + 1} gives no answer for this pair`));
+    }
+    return h("div", { class: "pair", style: "flex-wrap:wrap" }, boxes);
+  })));
+
+  kids.push(h("h2", {}, "Test"));
+  kids.push(h("div", { class: "pairs" }, t.test.map((p, i) => {
+    const rt = R?.test?.[i], boxes = [gridView(`te${i}in`, p.input, cellsOf(p.input), `test ${i + 1} input`)];
+    if (p.output) boxes.push(gridView(`te${i}exp`, p.output, null, "expected output", { ref: p.input }));
+    if (ps) {
+      const g = ps.test[i];
+      boxes.push(g ? gridView(`te${i}part`, g, null, `partial #${cur.partialSel + 1}`, { expected: p.output, ref: p.input })
+                   : h("div", { class: "note" }, `partial #${cur.partialSel + 1} gives no answer here`));
+    } else if (cur.prog != null && R) {
+      const g = R.candidates[cur.prog].test[i];
+      boxes.push(g ? gridView(`te${i}prog`, g, null, `program #${cur.prog + 1}`, { expected: p.output, ref: p.input })
+                   : h("div", { class: "note" }, `program #${cur.prog + 1} gives no answer here`));
+    } else if (rt) rt.attempts.forEach((a, k) => boxes.push(h("div", { class: "gridbox" },
+      gridView(`te${i}a${k}`, a.grid, null, `attempt ${k + 1}` + (a.correct === true ? " ✓" : a.correct === false ? " ✗" : ""), { expected: p.output, ref: p.input }),
+      h("span", { class: "cap", style: "max-width:220px;font-family:var(--mono)" }, a.name))));
+    if (rt && !rt.attempts.length && cur.prog == null && !ps) boxes.push(h("div", { class: "note" }, "No attempt: no program fits all training pairs."));
+    return h("div", { class: "pair", style: "flex-wrap:wrap;align-items:flex-start" }, boxes);
+  })));
+
+  if (R) {
+    kids.push(h("h2", {}, "Learned programs"));
+    kids.push(h("p", { class: "note", style: "margin:-12px 0 0" }, "Every program reproduces all training outputs exactly. They are ranked by leave-one-out generalization first, then by description length (shorter first). The first two different answers are the two attempts. Click a program to see its answer on the test input."));
+    if (!R.candidates.length) kids.push(h("div", { class: "note" }, "No program fits all training pairs."));
+    else kids.push(h("div", { class: "programs" }, h("table", {},
+      h("thead", {}, h("tr", {}, h("th", {}, "#"), h("th", {}, "Rule"), h("th", {}, "Length"), h("th", {}, "Leave-one-out"), h("th", {}, "Test answer"))),
+      h("tbody", {}, R.candidates.map((c, i) => {
+        return h("tr", { class: "prog" + (cur.prog === i ? " sel" : ""), onclick: () => { cur.prog = cur.prog === i ? null : i; cur.partialSel = null; render(); } },
+          h("td", {}, String(c.rank)), ruleCell(c), h("td", {}, c.complexity.toFixed(1)),
+          h("td", {}, c.generalizes ? "yes" : "no"), h("td", {}, testMarks(c.test, t)));
+      })))));
+    if (cur.prog != null) kids.push(h("button", { class: "ghost", style: "align-self:flex-start", onclick: () => { cur.prog = null; render(); } }, "Show the two attempts again"));
+  }
+
+  if (R || cur.partial || cur.partialRunning) {
+    kids.push(h("h2", {}, "Partial programs"));
+    kids.push(h("p", { class: "note", style: "margin:-12px 0 0" }, "Each is learned from one training pair alone, then tried on every pair. They show how far the simplest explanation of each single pair gets, and what it would answer on the test. Click one to see its outputs next to the training pairs. Wrong pixels are crossed out."));
+    if (!P) kids.push(cur.partialRunning ? h("span", { class: "chip running", style: "align-self:flex-start" }, "searching…")
+                                       : h("button", { class: "ghost", style: "align-self:flex-start", onclick: findPartial }, "Find partial programs"));
+    else if (!P.partial.length) kids.push(h("div", { class: "note" }, "Even a single training pair has no program in the solver's vocabulary. This task needs a concept the solver does not have yet."));
+    else kids.push(h("div", { class: "programs" }, h("table", {},
+      h("thead", {}, h("tr", {}, h("th", {}, "#"), h("th", {}, "Rule"), h("th", {}, "Learned from"), h("th", {}, "Training pairs"), h("th", {}, "Test answer"))),
+      h("tbody", {}, P.partial.map((c, i) => {
+        return h("tr", { class: "prog" + (cur.partialSel === i ? " sel" : ""), onclick: () => { cur.partialSel = cur.partialSel === i ? null : i; cur.prog = null; render(); } },
+          h("td", {}, String(i + 1)), ruleCell(c), h("td", {}, `pair ${c.learnedFrom}`),
+          h("td", {}, c.train.map((o, k) => `${k + 1}: ${o.fits ? "✓" : o.grid ? Math.round(o.accuracy * 100) + "%" : "–"}`).join("  ")),
+          h("td", {}, testMarks(c.test, t)));
+      })))));
+  }
+  if (caps.toolfinder) kids.push(...toolfinderOnTask(t));
+  main.replaceChildren(...kids);
+  inspect();
+}
+
+// ======================= ToolFinder =======================
+const OPS = { Add: "+", Subtract: "−", Multiply: "×", Divide: "÷" };
+function toolText(name) {
+  const m = name.match(/^op type op::(\w+) lhs (op variable|-?\d+) rhs (op variable|-?\d+)$/);
+  if (!m || !OPS[m[1]]) return name;
+  const side = v => v === "op variable" ? "x" : v;
+  return `${side(m[2])} ${OPS[m[1]]} ${side(m[3])}`;
+}
+const toolTable = r => !r.tools.length ? h("div", { class: "note" }, "No tool converts every example.")
+  : h("div", { class: "programs" }, h("table", {}, h("thead", {}, h("tr", {}, ["Tool", "As found", "Fits every example", "Answer"].map(x => h("th", {}, x)))),
+      h("tbody", {}, r.tools.map(t => h("tr", {}, h("td", { class: "rule" }, toolText(t.tool)), h("td", { class: "muted", style: "font-family:var(--mono);font-size:12px" }, t.tool),
+        h("td", {}, t.fitsAll ? "yes" : "no"), h("td", {}, t.answer ?? "–"))))));
+
+const GRID_SLOTS = [
+  ["width", g => g[0].length],
+  ["height", g => g.length],
+  ["colors", g => new Set(g.flat()).size],
+  ["objects", g => cellsOf(g).objectCount],
+  ["foreground pixels", g => g.flat().filter(c => c !== cellsOf(g).background).length],
+];
+function toolfinderOnTask(t) {
+  const kids = [h("h2", {}, "ToolFinder on this task"),
+    h("p", { class: "note", style: "margin:-12px 0 0" }, "The original InfoCell approach. For each number slot of the grid cells (width, height, …), ToolFinder looks for one tool that turns every training input's value into its output's value, and applies it to the test input. It works on values, not on whole grids, so it predicts properties of the answer, not the answer.")];
+  if (!cur.tf) {
+    kids.push(cur.tfRunning ? h("span", { class: "chip running", style: "align-self:flex-start" }, "searching…")
+                            : h("button", { class: "ghost", style: "align-self:flex-start", onclick: runToolfinderOnTask }, "Ask ToolFinder"));
+    return kids;
+  }
+  kids.push(h("div", { class: "programs" }, h("table", {},
+    h("thead", {}, h("tr", {}, ["Slot", "Training pairs", "Tools", "Test answer", "Actual"].map(x => h("th", {}, x)))),
+    h("tbody", {}, cur.tf.map(({ slot, pairs, actual, result }) => {
+      const answers = result.error ? [] : [...new Set(result.tools.filter(x => x.fitsAll).map(x => x.answer))];
+      const tools = result.error ? h("span", { class: "err" }, result.error)
+        : result.tools.length ? [...new Set(result.tools.map(x => toolText(x.tool)))].join(",  ") : h("span", { class: "muted" }, "none");
+      const mark = actual == null || !answers.length ? "" : answers.includes(String(actual)) ? " ✓" : " ✗";
+      return h("tr", {}, h("td", {}, h("b", {}, slot)), h("td", { style: "font-family:var(--mono)" }, pairs.map(([a, b]) => `${a}→${b}`).join("  ")),
+        h("td", { class: "rule" }, tools), h("td", {}, answers.join(", ") || "–"), h("td", {}, actual == null ? "?" : String(actual) + mark));
+    })))));
+  return kids;
+}
+async function runToolfinderOnTask() {
+  const task = cur, t = cur.task; task.tfRunning = true; render();
+  const rows = await Promise.all(GRID_SLOTS.map(async ([slot, f]) => {
+    const pairs = t.train.map(p => [f(p.input), f(p.output)]), test = f(t.test[0].input);
+    const actual = t.test[0].output ? f(t.test[0].output) : null;
+    const result = await getJson(`/api/toolfinder?pairs=${pairs.map(([a, b]) => `${a}:${b}`).join(",")}&test=${test}`);
+    return { slot, pairs, actual, result };
+  }));
+  task.tfRunning = false; task.tf = rows;
+  if (cur === task) render();
+}
+
+const TOOL_PRESETS = [["1, 2, 3"], ["1, 2, 4"], ["8, 4, 2"], ["1, 3, 9"], ["1, 3, 5"], ["4, 4, 4"], ["1, 2, 1, 2"], ["2:4, 3:6", "5"], ["3:9, 5:15", "7"]];
+let toolInput = { text: "1, 2, 4", test: "" }, toolResult = null;
+function renderTools() {
+  $("#list").replaceChildren(h("div", { class: "group" }, "Examples"), ...TOOL_PRESETS.map(([text, test]) =>
+    h("button", { onclick: () => { toolInput = { text, test: test || "" }; renderTools(); runTools(); } }, text + (test ? ` → ${test}` : ""), "")));
+  const kids = [h("div", { class: "task-head" }, h("span", { class: "id" }, "ToolFinder")),
+    h("p", { class: "note", style: "margin:-12px 0 0" }, "A sequence like 1, 2, 4: every step is an example, the last value is the test input. Pairs like 2:4, 3:6: examples, with the test input given separately. Only the tools that explain every example are kept."),
+    h("div", { class: "task-head", style: "gap:14px" },
+      h("label", { class: "toggle" }, "Examples", h("input", { id: "toolText", type: "search", value: toolInput.text, style: "width:240px" })),
+      h("label", { class: "toggle" }, "Test input", h("input", { id: "toolTest", type: "search", value: toolInput.test, style: "width:80px" })),
+      h("button", { onclick: runTools }, "Find tools"))];
+  if (toolResult?.running) kids.push(h("span", { class: "chip running", style: "align-self:flex-start" }, "searching…"));
+  else if (toolResult?.error) kids.push(h("div", { class: "err" }, toolResult.error));
+  else if (toolResult) {
+    kids.push(h("p", { class: "note" }, `Examples: ${toolResult.pairs.map(([a, b]) => `${a}→${b}`).join(", ")}` + (toolResult.test != null ? ` · test input ${toolResult.test}` : "")));
+    kids.push(toolTable(toolResult));
+  }
+  $("#main").replaceChildren(...kids);
+  $("#insp").replaceChildren(h("div", { class: "note" },
+    h("p", {}, "ToolFinder is the induction engine of the original InfoCell code. For an example from → to it searches the operations of the type system (add, subtract, multiply, divide, …) for tools that produce to from from."),
+    h("p", {}, "Tools that explain every example survive, and each is applied to the test input. It works on numbers here; sets and grid slots are the next step.")));
+}
+async function runTools() {
+  const text = ($("#toolText")?.value ?? toolInput.text).trim(), test = ($("#toolTest")?.value ?? toolInput.test).trim();
+  toolInput = { text, test };
+  const items = text.split(",").map(x => x.trim()).filter(Boolean);
+  const query = text.includes(":") ? `pairs=${items.join(",")}` + (test ? `&test=${test}` : "") : `sequence=${items.join(",")}`;
+  toolResult = { running: true }; renderTools();
+  toolResult = await getJson(`/api/toolfinder?${query}`);
+  if (mode === "tools") renderTools();
+}
+
+// ======================= Grammar =======================
+let grammarExamples = null, grammarSel = null, grammarText = "", grammarResult = null;
+async function openGrammar() {
+  if (!grammarExamples) {
+    const g = await getJson("/api/grammar-examples");
+    grammarExamples = g.error ? [] : g;
+    if (grammarExamples.length && !grammarText) { grammarSel = grammarExamples[0].name; grammarText = grammarExamples[0].strings.join("\n"); runGrammar(); return; }
+  }
+  renderGrammar();
+}
+function renderGrammar() {
+  $("#list").replaceChildren(h("div", { class: "group" }, "Examples"), ...grammarExamples.map(e =>
+    h("button", { class: grammarSel === e.name ? "active" : "", title: e.title, onclick: () => { grammarSel = e.name; grammarText = e.strings.join("\n"); runGrammar(); } },
+      e.name, h("span", { class: "muted", style: "font-size:11px" }, String(e.strings.length)))));
+  const R = grammarResult, kids = [h("div", { class: "task-head" }, h("span", { class: "id" }, "Grammar")),
+    h("p", { class: "note", style: "margin:-12px 0 0" }, "Valid strings only, one per line. The shortest description they all fit wins: a pattern of constants and variables, read as an axiom and a rule that grows a variable."),
+    h("textarea", { id: "grammarText", rows: 8, spellcheck: "false", style: "font:13px var(--mono);color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px;width:100%;max-width:640px" }, grammarText),
+    h("button", { style: "align-self:flex-start", onclick: () => { grammarSel = null; grammarText = $("#grammarText").value; runGrammar(); } }, "Find the generator")];
+  if (R?.running) kids.push(h("span", { class: "chip running", style: "align-self:flex-start" }, "searching…"));
+  else if (R?.error) kids.push(h("div", { class: "err" }, R.error));
+  else if (R && !R.found) kids.push(h("p", { class: "note" }, `No pattern with variables fits all ${R.examples.length} strings.`));
+  else if (R) {
+    const total = R.bits.model + R.bits.data, pct = v => Math.max(1, Math.round(100 * v / R.bits.listing));
+    kids.push(h("div", { class: "box" },
+      h("div", { style: "font:600 22px var(--mono)" }, R.pattern),
+      h("div", { class: "kv" }, R.variables.map(v => h("span", { class: "tag" }, `${v.name} = any non-empty string of {${v.alphabet}}`))),
+      slots([["axiom schema", h("span", { style: "font-family:var(--mono)" }, R.axiomSchema)],
+             ["rule schema", h("div", { style: "font-family:var(--mono)" }, R.ruleSchemas.map(r => h("div", {}, r)))],
+             ["concrete axioms", h("span", { style: "font-family:var(--mono)" }, R.axioms.join("   "))],
+             ["concrete rules", h("div", { style: "font-family:var(--mono)" }, R.rules.map(r => h("div", {}, r)))],
+             ["derived strings", h("span", { style: "font-family:var(--mono)" }, R.derived.join("   ") || "–")]])));
+    kids.push(h("h2", {}, "Compression"));
+    kids.push(h("div", { class: "box" },
+      h("div", { class: "note" }, `${R.examples.length} strings, ${R.candidates} patterns tried. The description is the pattern plus what is left to say about each string.`),
+      h("div", { style: "display:flex;flex-direction:column;gap:6px" },
+        h("div", {}, h("div", { style: `height:14px;width:${pct(R.bits.model)}%;background:var(--ink);border-radius:3px;display:inline-block` }),
+          h("div", { style: `height:14px;width:${pct(R.bits.data)}%;background:var(--ink-soft);border:1px solid var(--ink);border-radius:3px;display:inline-block` }),
+          h("span", { class: "muted", style: "margin-left:8px" }, `pattern ${R.bits.model.toFixed(1)} + data ${R.bits.data.toFixed(1)} = ${total.toFixed(1)} bits`)),
+        h("div", {}, h("div", { style: "height:14px;width:100%;max-width:100%;background:var(--line);border-radius:3px" }),
+          h("span", { class: "muted" }, `listing the strings: ${R.bits.listing.toFixed(1)} bits`)))));
+  }
+  $("#main").replaceChildren(...kids);
+  $("#insp").replaceChildren(h("div", { class: "note" },
+    h("p", {}, "From positive examples alone a grammar can never be guaranteed (Gold, 1967). The shortest description the examples fit is still a good guess."),
+    h("p", {}, "A variable that appears twice is how \"the same thing again\" is said. That is what finds x p y q x y, Hofstadter's pq-system.")));
+}
+async function runGrammar() {
+  grammarResult = { running: true }; renderGrammar();
+  grammarResult = await getJson(`/api/grammar?strings=${encodeURIComponent(grammarText)}`);
+  if (mode === "grammar") renderGrammar();
+}
+
+// ======================= Cell types page =======================
+let mode = "tasks", TY = null, tySel = null;
+const SOLVER_PAGES = [
+  ["solver:overview", "Overview: how cells link"],
+  ["solver:pixel", "Pixel cell (perceived)"],
+  ["solver:object", "Object cell (perceived)"],
+  ["solver:grid", "Grid cell (perceived)"],
+  ["solver:fate", "Fate of an object"],
+  ["solver:compose", "Composition steps"],
+  ["solver:families", "Hypothesis families"],
+];
+function setMode(m) {
+  mode = m;
+  $("#tabTasks").classList.toggle("on", m === "tasks"); $("#tabTypes").classList.toggle("on", m === "types"); $("#tabTools").classList.toggle("on", m === "tools"); $("#tabGrammar").classList.toggle("on", m === "grammar");
+  $("#taskControls").style.display = m === "tasks" ? "contents" : "none";
+  $("#typeControls").style.display = m === "types" ? "contents" : "none";
+  if (m === "tasks") {
+    history.replaceState(null, "", cur.id ? `#${cur.set}/${cur.id}` : "#");
+    renderList(); if (cur.task) render(); else $("#main").replaceChildren(h("div", { class: "empty" }, "Pick a task on the left."));
+    inspect();
+  } else if (m === "tools") {
+    history.replaceState(null, "", "#tools");
+    renderTools();
+  } else if (m === "grammar") {
+    history.replaceState(null, "", "#grammar");
+    openGrammar();
+  } else {
+    const hash = decodeURIComponent(location.hash.slice(1));
+    openTypes(hash.startsWith("types/") ? hash.slice(6) : "");
+  }
+}
+$("#tabTasks").addEventListener("click", () => setMode("tasks"));
+$("#tabTypes").addEventListener("click", () => setMode("types"));
+$("#tabTools").addEventListener("click", () => setMode("tools"));
+$("#tabGrammar").addEventListener("click", () => setMode("grammar"));
+$("#typeFilter").addEventListener("input", () => renderTypeList());
+$("#tInstances").addEventListener("change", () => renderTypeList());
+
+async function openTypes(sel) {
+  if (!TY) {
+    $("#main").replaceChildren(h("div", { class: "empty" }, "Loading the cell types… (the first time, the solver builds its world: a few seconds)"));
+    const body = await getJson("/api/types");
+    if (body.error) { $("#main").replaceChildren(h("div", { class: "err" }, body.error)); return; }
+    TY = indexTypes(body);
+  }
+  showType(sel || (TY.solver ? "solver:overview" : "arc::Grid"));
+}
+function indexTypes(body) {
+  const byName = new Map(body.types.map(t => [t.name, t]));
+  const usedBy = new Map();
+  const T = { ...body, byName, usedBy };
+  body.types.forEach(t => t.members.forEach(m => tokens(m.type).forEach(tok => {
+    const r = resolveType(T, tok); if (!r || r === t.name) return;
+    if (!usedBy.has(r)) usedBy.set(r, []); usedBy.get(r).push({ type: t.name, slot: m.name });
+  })));
+  return T;
+}
+const tokens = s => (s || "").match(/[A-Za-z_][\w]*(?:::[A-Za-z_]\w*)*/g) || [];
+function resolveType(T, tok) {
+  if (T.byName.has(tok)) return tok;
+  for (const p of ["std::", "arc::", "std::op::", "std::ast::"]) if (T.byName.has(p + tok)) return p + tok;
+  return null;
+}
+const isInstance = n => n.includes("<") || /::(keyType|valueType|listType|pairType|nodeType|ValueType|tableType)$/.test(n);
+function groupOf(n) { const base = n.split("<")[0]; const i = base.lastIndexOf("::"); return i < 0 ? "(global)" : base.slice(0, i); }
+
+function renderTypeList() {
+  if (mode !== "types" || !TY) return;
+  const f = $("#typeFilter").value.trim().toLowerCase(), inst = $("#tInstances").checked;
+  const kids = [];
+  if (TY.solver) {
+    kids.push(h("div", { class: "group" }, "Solver vocabulary"));
+    SOLVER_PAGES.forEach(([k, label]) => kids.push(h("button", { class: tySel === k ? "active" : "", onclick: () => showType(k) }, label, "")));
+  }
+  const groups = new Map();
+  TY.types.filter(t => (inst || !isInstance(t.name)) && (!f || t.name.toLowerCase().includes(f)))
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .forEach(t => { const g = groupOf(t.name); if (!groups.has(g)) groups.set(g, []); groups.get(g).push(t); });
+  [...groups.keys()].sort((a, b) => (a.startsWith("arc") ? -1 : 0) - (b.startsWith("arc") ? -1 : 0) || a.localeCompare(b)).forEach(g => {
+    kids.push(h("div", { class: "group" }, `${g} (${groups.get(g).length})`));
+    groups.get(g).forEach(t => kids.push(h("button", { class: tySel === t.name ? "active" : "", title: t.name, onclick: () => showType(t.name) },
+      t.name.slice(g.length + 2) || t.name, h("span", { class: "muted", style: "font-size:11px" }, t.enum ? "enum" : ""))));
+  });
+  $("#list").replaceChildren(...kids);
+  $("#counts").textContent = "";
+}
+
+function typeLinks(label) {
+  if (!label) return h("span", { class: "muted" }, "—");
+  const out = []; let last = 0;
+  for (const m of label.matchAll(/[A-Za-z_][\w]*(?:::[A-Za-z_]\w*)*/g)) {
+    out.push(label.slice(last, m.index));
+    const r = resolveType(TY, m[0]);
+    out.push(r ? h("a", { class: "tlink", onclick: () => showType(r) }, m[0]) : m[0]);
+    last = m.index + m[0].length;
+  }
+  out.push(label.slice(last));
+  return h("span", { style: "font-family:var(--mono)" }, out);
+}
+const table = (head, rows) => h("div", { class: "programs" }, h("table", {}, h("thead", {}, h("tr", {}, head.map(x => h("th", {}, x)))),
+  h("tbody", {}, rows.map(r => h("tr", {}, r.map(c => h("td", {}, c)))))));
+
+function showType(sel) {
+  tySel = sel; history.replaceState(null, "", "#types/" + encodeURIComponent(sel));
+  renderTypeList();
+  document.querySelector("#list button.active")?.scrollIntoView({ block: "nearest" });
+  const main = $("#main");
+  if (sel.startsWith("solver:") && TY.solver) { main.replaceChildren(...solverPage(sel)); $("#insp").replaceChildren(legend()); return; }
+  const t = TY.byName.get(sel);
+  if (!t) { main.replaceChildren(h("div", { class: "empty" }, "Unknown type " + sel)); return; }
+  const kids = [h("div", { class: "task-head" }, h("span", { class: "id" }, t.name), h("span", { class: "chip unknown" }, t.enum ? "enum" : "struct"),
+    isInstance(t.name) ? h("span", { class: "chip noprogram" }, "template instance") : null)];
+  const hybrid = { "arc::Pixel": "The C++ Pixel cell (src/arc/hybridcells/Pixel.cc) adds read-only slots on top: color, and links up, down, left, right to the neighbour Pixel cells. A link is missing at the grid edge.",
+                   "arc::Grid": "The C++ Grid cell (src/arc/hybridcells/Grid.cc) creates one Pixel cell per pixel when a grid is loaded." }[t.name];
+  if (hybrid) kids.push(h("p", { class: "note" }, hybrid));
+  if (t.memberOf.length) kids.push(h("div", { class: "kv" }, h("span", { class: "muted" }, "is a:"), t.memberOf.map(n => h("span", { class: "tag ink" }, typeLinks(n)))));
+  kids.push(graph(t));
+  const vals = t.enum ? t.members.filter(m => m.name !== "tag") : [];
+  if (t.enum) {
+    kids.push(h("h2", {}, `Values (${vals.length})`));
+    kids.push(h("div", { class: "kv" }, vals.map(m => h("span", { class: "tag" }, m.name))));
+  } else {
+    kids.push(h("h2", {}, `Slots (${t.members.length})`));
+    kids.push(t.members.length ? table(["Slot", "Type", "Relation", "Role"], t.members.map(m => [h("b", {}, m.name), typeLinks(m.type), m.relation || "", m.role || ""]))
+                               : h("p", { class: "note" }, "No declared slots."));
+  }
+  if (t.methods.length) {
+    kids.push(h("h2", {}, `Methods (${t.methods.length})`));
+    kids.push(h("div", { class: "cols" }, t.methods.map(f => h("div", { style: "font-family:var(--mono);font-size:13px" }, f.name, "(",
+      f.parameters.flatMap((p, i) => [i ? ", " : "", p.name, p.type ? ": " : "", p.type ? typeLinks(p.type) : ""]), ")"))));
+  }
+  const used = TY.usedBy.get(t.name) || [];
+  kids.push(h("h2", {}, `Used by (${used.length})`));
+  kids.push(used.length ? h("div", { class: "kv" }, used.slice(0, 200).map(u => h("span", { class: "tag" }, typeLinks(u.type), "." + u.slot)))
+                        : h("p", { class: "note" }, "No other type has a slot of this type."));
+  main.replaceChildren(...kids);
+  $("#insp").replaceChildren(legend());
+}
+
+function graph(t) {
+  const outs = [], seen = new Set();
+  t.members.forEach(m => tokens(m.type).forEach(tok => {
+    const r = resolveType(TY, tok);
+    if (r && !seen.has(r + "." + m.name)) { seen.add(r + "." + m.name); outs.push({ to: r, label: m.name }); }
+  }));
+  const ins = (TY.usedBy.get(t.name) || []).slice(0, 12);
+  const O = outs.slice(0, 14), rows = Math.max(O.length, ins.length, 1), H = Math.max(120, rows * 30 + 30), W = 860;
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  const add = (tag, a, text) => { const e = document.createElementNS(svg.namespaceURI, tag); for (const k in a) e.setAttribute(k, a[k]); if (text != null) e.textContent = text; svg.appendChild(e); return e; };
+  const node = (x, y, w, label, strong, target) => {
+    const g = add("g", { style: target ? "cursor:pointer" : "" });
+    const r = document.createElementNS(svg.namespaceURI, "rect");
+    Object.entries({ x: x, y: y - 12, width: w, height: 24, rx: 6, fill: strong ? "var(--ink-soft)" : "var(--panel)", stroke: strong ? "var(--ink)" : "var(--line)" }).forEach(([k, v]) => r.setAttribute(k, v));
+    const tx = document.createElementNS(svg.namespaceURI, "text");
+    Object.entries({ x: x + 8, y: y + 4 }).forEach(([k, v]) => tx.setAttribute(k, v)); tx.textContent = label.length > 30 ? label.slice(0, 29) + "…" : label;
+    g.append(r, tx); if (target) g.addEventListener("click", () => showType(target)); return g;
+  };
+  const cy = H / 2, mx = 330, mw = 200;
+  const spread = (i, n) => n === 1 ? cy : 24 + i * ((H - 40) / (n - 1));
+  ins.forEach((u, i) => { const yy = spread(i, ins.length);
+    add("path", { d: `M190 ${yy} C 260 ${yy}, 260 ${cy}, ${mx} ${cy}`, fill: "none", stroke: "var(--line)", "stroke-width": 1.5 });
+    add("text", { x: 196, y: yy - 4, class: "lbl" }, "." + u.slot); node(10, yy, 180, u.type, false, u.type); });
+  O.forEach((o, i) => { const y = spread(i, O.length);
+    add("path", { d: `M${mx + mw} ${cy} C 600 ${cy}, 600 ${y}, 660 ${y}`, fill: "none", stroke: "var(--ink)", "stroke-width": 1.5 });
+    add("text", { x: 560, y: y - 4, class: "lbl" }, o.label); node(660, y, 190, o.to, false, o.to); });
+  node(mx, cy, mw, t.name, true);
+  if (!ins.length) add("text", { x: 10, y: cy + 4, class: "lbl" }, "nothing points here");
+  if (!O.length) add("text", { x: 660, y: cy + 4, class: "lbl" }, "no typed slots");
+  return h("div", { class: "box" }, h("div", { class: "note" }, "Left: types with a slot of this type. Right: the types of this type's slots, labelled with the slot name. Click a box to open it."), svg);
+}
+
+function legend() {
+  return h("div", { class: "note" }, h("p", {}, "Two layers are shown here."),
+    h("p", {}, h("b", {}, "Compiled types"), " are InfoCell's own type system: the std and arc libraries, compiled into cells when the world is built. These are the definitions of every cell kind."),
+    h("p", {}, h("b", {}, "Solver vocabulary"), " is what the ARC solver perceives on top: the slots it computes for pixels and objects, the relations between objects, and the parts of a rule."),
+    h("p", {}, "This page only reads. Editing types, slots and derivation rules here is planned; it would write a type definition that the solver loads instead of the built-in one."));
+}
+
+function solverPage(sel) {
+  const S = TY.solver, kids = [];
+  const head = (title, sub) => { kids.push(h("div", { class: "task-head" }, h("span", { class: "id" }, title))); if (sub) kids.push(h("p", { class: "note", style: "margin:-12px 0 0" }, sub)); };
+  if (sel === "solver:overview") {
+    head("How cells link", "The cells the solver builds for every grid, and how one learned rule reads them. Click a box to open its page.");
+    kids.push(overviewGraph());
+    kids.push(h("p", { class: "note" }, `Counts: ${S.objectAtoms.length} object slots, ${S.objectRelations.length} relations, ${S.formulas.length} derived object formulas, ${S.parses.length} ways to parse a grid into objects, ${S.pixelFeatures.length} pixel features, ${S.composeSteps.length} composition steps, ${S.families.length} hypothesis families. ${TY.types.length} compiled InfoCell types.`));
+  } else if (sel === "solver:pixel") {
+    head("Pixel cell (perceived)", "One per input pixel. Its own slots, plus features the pixel tables can read. A feature's cost is its description length in the rule ranking.");
+    kids.push(h("h2", {}, "Own slots"));
+    kids.push(table(["Slot", "Value"], [["x, y", "position"], ["color", "arc::Color"], ["up, down, left, right", "link to the neighbour Pixel cell, missing at the edge"], ["object", "link to its Object cell (one per parse)"]]));
+    kids.push(h("h2", {}, `Features a rule can read (${S.pixelFeatures.length})`));
+    kids.push(h("div", { class: "cols" }, S.pixelFeatures.map(f => h("div", { style: "font-size:13px" }, f.name, h("span", { class: "muted" }, ` · ${f.cost.toFixed(2)}`)))));
+  } else if (sel === "solver:object") {
+    head("Object cell (perceived)", "Created by grouping Pixel cells. Its slots are computed from its pixels; relations link it to other objects; formulas combine both. A rule's table is keyed by one or two formulas.");
+    kids.push(h("h2", {}, `Own slots (${S.objectAtoms.length})`));
+    kids.push(h("div", { class: "kv" }, S.objectAtoms.map(a => h("span", { class: "tag" }, a))));
+    kids.push(h("h2", {}, `Relations to other objects (${S.objectRelations.length})`));
+    kids.push(h("div", { class: "kv" }, S.objectRelations.map(a => h("span", { class: "tag ink" }, a))));
+    kids.push(h("h2", {}, `Ways to group pixels into objects (${S.parses.length})`));
+    kids.push(h("div", { class: "kv" }, S.parses.map(a => h("span", { class: "tag" }, a))));
+    kids.push(h("h2", {}, `Derived formulas (${S.formulas.length}), shortest first`));
+    kids.push(h("p", { class: "note", style: "margin:-12px 0 0" }, "Bits = description length. A rule pays these bits for every formula it uses, so short formulas are tried and preferred first."));
+    kids.push(table(["Formula", "Bits"], S.formulas.map(f => [f.name, f.bits.toFixed(1)])));
+  } else if (sel === "solver:grid") {
+    head("Grid cell (perceived)", "One per grid. Holds the Pixel cells and, per parse, the Object cells.");
+    kids.push(table(["Slot", "Value"], [["width, height", "number"], ["background", "black if present, else the most frequent color"], ["pixels", "list of Pixel cells, one per pixel"], ["objects", `list of Object cells, for each of the ${S.parses.length} parses`]]));
+  } else if (sel === "solver:fate") {
+    head("Fate of an object", "An object rule says, for every object, what happens to it. Each component has its own learned table; the value kinds are listed below (colors and directions shown by one example).");
+    kids.push(table(["Component", "Possible values"], S.fate.map(c => [h("b", {}, c.component), h("div", { class: "kv" }, c.values.map(v => h("span", { class: "tag" }, v)))])));
+  } else if (sel === "solver:compose") {
+    head("Composition steps", `Parameter-free grid → grid steps. The search chains up to three of them, then finishes with a learned rule.`);
+    kids.push(h("div", { class: "cols" }, S.composeSteps.map(s => h("div", { style: "font-size:13px" }, s))));
+  } else if (sel === "solver:families") {
+    head("Hypothesis families", "Every family the solver tries on a task, with its base description length. Families with the same prefix are grouped.");
+    const groups = new Map();
+    S.families.forEach(f => { const k = f.name.split(/[\[:(]| -> |, then /)[0].trim() || f.name; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(f); });
+    kids.push(table(["Family", "Variants", "Length"], [...groups.entries()].sort((a, b) => b[1].length - a[1].length).map(([k, fs]) =>
+      [fs.length > 1 ? h("details", {}, h("summary", { style: "cursor:pointer" }, k), h("div", { class: "muted", style: "font-size:12px;white-space:pre-wrap" }, fs.map(f => f.name).join("\n"))) : k,
+       String(fs.length), Math.min(...fs.map(f => f.complexity)).toFixed(1)])));
+  }
+  return kids;
+}
+
+function overviewGraph() {
+  const W = 860, H = 330, svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  const add = (tag, a, text) => { const e = document.createElementNS(svg.namespaceURI, tag); for (const k in a) e.setAttribute(k, a[k]); if (text != null) e.textContent = text; svg.appendChild(e); return e; };
+  const defs = add("defs", {}); const m = document.createElementNS(svg.namespaceURI, "marker");
+  Object.entries({ id: "ah", viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: "auto" }).forEach(([k, v]) => m.setAttribute(k, v));
+  const mp = document.createElementNS(svg.namespaceURI, "path"); mp.setAttribute("d", "M0 0 L10 5 L0 10 z"); mp.setAttribute("fill", "var(--ink)"); m.appendChild(mp); defs.appendChild(m);
+  const N = { grid: [40, 140, "Grid", "solver:grid"], pixel: [250, 140, "Pixel", "solver:pixel"], object: [480, 140, "Object", "solver:object"], fate: [700, 60, "Fate", "solver:fate"], rule: [700, 230, "Rule (table)", "solver:families"] };
+  const edge = (a, b, label, bend = 0, dash) => {
+    const [x1, y1] = N[a], [x2, y2] = N[b];
+    const sx = x1 + 120, sy = y1, ex = x2, ey = y2, mx = (sx + ex) / 2, my = (sy + ey) / 2 - bend;
+    add("path", { d: `M${sx} ${sy} Q ${mx} ${my} ${ex} ${ey}`, fill: "none", stroke: "var(--ink)", "stroke-width": 1.5, "marker-end": "url(#ah)", "stroke-dasharray": dash ? "5 4" : "" });
+    add("text", { x: mx - 30, y: my + (bend > 0 ? 18 : -6), class: "lbl" }, label);
+  };
+  edge("grid", "pixel", "pixels");
+  edge("pixel", "object", "object (per parse)", 40);
+  edge("object", "fate", "fate");
+  add("path", { d: "M700 230 Q 620 230 560 158", fill: "none", stroke: "var(--ink)", "stroke-width": 1.5, "marker-end": "url(#ah)", "stroke-dasharray": "5 4" });
+  add("text", { x: 560, y: 236, class: "lbl" }, "reads slots, formulas");
+  add("path", { d: "M760 214 L 760 78", fill: "none", stroke: "var(--ink)", "stroke-width": 1.5, "marker-end": "url(#ah)", "stroke-dasharray": "5 4" });
+  add("text", { x: 768, y: 150, class: "lbl" }, "decides");
+  add("path", { d: "M280 128 C 260 70, 360 70, 340 128", fill: "none", stroke: "var(--ink)", "stroke-width": 1.5, "marker-end": "url(#ah)" });
+  add("text", { x: 250, y: 66, class: "lbl" }, "up, down, left, right");
+  add("path", { d: "M510 128 C 490 70, 590 70, 570 128", fill: "none", stroke: "var(--ink)", "stroke-width": 1.5, "marker-end": "url(#ah)" });
+  add("text", { x: 470, y: 66, class: "lbl" }, "nearest, largest, touching, …");
+  add("path", { d: "M480 160 C 420 220, 380 220, 330 160", fill: "none", stroke: "var(--ink)", "stroke-width": 1.5, "marker-end": "url(#ah)" });
+  add("text", { x: 380, y: 222, class: "lbl" }, "pixels");
+  Object.values(N).forEach(([x, y, label, target]) => {
+    const g = document.createElementNS(svg.namespaceURI, "g"); g.style.cursor = "pointer"; g.addEventListener("click", () => showType(target));
+    const r = document.createElementNS(svg.namespaceURI, "rect"); Object.entries({ x, y: y - 16, width: 120, height: 32, rx: 8, fill: "var(--ink-soft)", stroke: "var(--ink)" }).forEach(([k, v]) => r.setAttribute(k, v));
+    const t = document.createElementNS(svg.namespaceURI, "text"); t.setAttribute("x", x + 12); t.setAttribute("y", y + 5); t.textContent = label;
+    g.append(r, t); svg.appendChild(g);
+  });
+  return h("div", { class: "box" }, svg);
+}
+
+async function init() {
+  const c = await getJson("/api/capabilities");
+  if (!c.error) caps = c;
+  document.body.classList.toggle("no-solver", !caps.solve);
+  $("#tabTools").hidden = !caps.toolfinder;
+  $("#tabTypes").hidden = !caps.types;
+  $("#tabGrammar").hidden = !caps.grammar;
+  await loadSets();
+  const hash = location.hash;
+  setMode(hash.startsWith("#types") ? "types" : hash.startsWith("#tools") ? "tools" : hash.startsWith("#grammar") ? "grammar" : "tasks");
+}
+init();
+</script>
+</body>
+</html>

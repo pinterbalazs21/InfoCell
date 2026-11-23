@@ -1,6 +1,8 @@
 add_library(cli-lib STATIC
     App.cc
     App.h
+    CellCommands.cc
+    CellCommands.h
 )
 
 target_link_libraries(cli-lib

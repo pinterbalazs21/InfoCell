@@ -51,9 +51,19 @@ infocell-cli arc-agi-1 -d -t -i 007bbfb7 compare-edges input -pk training -pi 0 
 - `arc-agi-2`: `-dd` or `-df <folder>`; `-ft` / `-fe` training or evaluation with solutions; `-i <task-id>`
 - `compare-edges input … output …`: each grid is `-pk training|test`, `-pi <pair index>`, `-ik input|output`
 
+ToolFinder on number examples, and the compiled cell types, as JSON:
+
+```
+infocell-cli toolfinder --sequence 1 2 4
+infocell-cli toolfinder --pairs 3:9 5:15 --test 7
+infocell-cli types
+```
+
 `infocell-cli --help` and `<command> --help` list everything.
 
 `infocell-tui`: the terminal UI.
+
+Viewer in the browser: `python tools/web/server.py`, then http://127.0.0.1:8765 (see `tools/web/README.md`).
 
 ## Tests
 

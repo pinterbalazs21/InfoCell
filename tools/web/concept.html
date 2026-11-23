@@ -1,0 +1,889 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>InfoCell Concept</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+
+:root {
+  --bg: #f3f5f9;
+  --panel: #ffffff;
+  --fg: #18223a;
+  --muted: #5d6784;
+  --line: #d3d9e6;
+  --ink: #2a3cb0;
+  --ink-soft: #e4e8fb;
+  --ok: #1f8a4c;
+  --bad: #c2362b;
+  --cellLine: #3a4258;
+  --display: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
+  --body: "Inter", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", Consolas, "Courier New", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1320; --panel: #161d2e; --fg: #e3e8f3; --muted: #9aa4c0; --line: #2b3550;
+    --ink: #93a5ff; --ink-soft: #222c4d; --ok: #4fcf86; --bad: #ff7b6e; --cellLine: #55607d;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1320; --panel: #161d2e; --fg: #e3e8f3; --muted: #9aa4c0; --line: #2b3550;
+  --ink: #93a5ff; --ink-soft: #222c4d; --ok: #4fcf86; --bad: #ff7b6e; --cellLine: #55607d;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 40px 64px;
+}
+main { max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 56px; }
+header { display: flex; flex-direction: column; gap: 10px; max-width: 70ch; }
+h1 { font-family: var(--display); font-size: clamp(28px, 5vw, 40px); line-height: 1.1; margin: 0; text-wrap: balance; }
+h2 { font-family: var(--display); font-size: 24px; margin: 0; text-wrap: balance; display: flex; gap: 12px; align-items: baseline; }
+h2 .n { color: var(--ink); font-size: 15px; letter-spacing: .08em; text-transform: uppercase; }
+h3 { font-family: var(--display); font-size: 17px; margin: 0; }
+p { margin: 0; max-width: 68ch; }
+.lead { color: var(--muted); font-size: 17px; }
+section { display: flex; flex-direction: column; gap: 18px; }
+.figure { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; overflow-x: auto; }
+.figure svg { display: block; width: 100%; min-width: 760px; height: auto; }
+.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px 28px; }
+.notes > div { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+code, .mono { font-family: var(--mono); font-size: 13px; }
+code { background: var(--ink-soft); color: var(--fg); padding: 1px 5px; border-radius: 4px; }
+table { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 14px; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; }
+tr:last-child td { border-bottom: 0; }
+.chip { display: inline-block; font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 99px; white-space: nowrap; }
+.chip.ok { color: var(--ok); border: 1px solid var(--ok); }
+.chip.bad { color: var(--bad); border: 1px solid var(--bad); }
+.chip.win { background: var(--ok); color: var(--panel); }
+.controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; padding: 14px 16px; border-top: 1px solid var(--line); }
+button { font: 600 14px var(--body); border-radius: 7px; padding: 8px 16px; cursor: pointer; border: 1px solid var(--ink); background: var(--ink); color: var(--panel); }
+button.ghost { background: transparent; color: var(--ink); }
+button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+#trace { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+.aside { border-left: 3px solid var(--ink); padding: 4px 0 4px 16px; color: var(--muted); max-width: 72ch; }
+svg text { font-family: var(--body); }
+.t-label { fill: var(--muted); font-size: 13px; }
+.t-head { fill: var(--fg); font-size: 15px; font-weight: 600; font-family: var(--display); }
+.t-mono { fill: var(--fg); font-size: 12.5px; font-family: var(--mono); }
+.t-ink { fill: var(--ink); }
+.box { fill: var(--panel); stroke: var(--line); stroke-width: 1.2; }
+.box-ink { fill: var(--ink-soft); stroke: var(--ink); stroke-width: 1.5; }
+.wire { stroke: var(--ink); stroke-width: 1.4; fill: none; }
+.wire.dash { stroke-dasharray: 5 4; }
+.cellLine { stroke: var(--cellLine); stroke-width: 1; }
+@media (prefers-reduced-motion: no-preference) { .pop { transition: opacity .25s; } }
+
+.toc { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 6px; }
+.toc a { color: var(--ink); text-decoration: none; font-weight: 600; }
+.toc a:hover { text-decoration: underline; }
+.playground { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+.pg-controls { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+.pg-controls label { display: inline-flex; gap: 6px; align-items: center; color: var(--muted); }
+.pg-controls input, .pg-controls select { font: 13px var(--mono); color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; }
+.pg-world { display: flex; flex-wrap: wrap; gap: 12px; }
+.pg-cell { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; min-width: 150px; background: var(--bg); }
+.pg-cell.sel { border-color: var(--ink); background: var(--ink-soft); }
+.pg-cell h4 { margin: 0 0 6px; font: 600 14px var(--display); }
+.pg-cell div { font: 13px var(--mono); }
+.pg-log { font-size: 13px; color: var(--muted); white-space: pre-wrap; max-height: 160px; overflow-y: auto; border-top: 1px solid var(--line); padding-top: 8px; }
+.pg-log .ok { color: var(--ok); } .pg-log .bad { color: var(--bad); }
+.layers { display: flex; flex-direction: column-reverse; gap: 8px; }
+.layer { display: grid; grid-template-columns: 170px 1fr auto; gap: 14px; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; }
+.layer h4 { margin: 0; font: 600 15px var(--display); }
+.layer p { margin: 0; color: var(--muted); font-size: 14px; }
+.layer .tag { font-size: 12px; font-weight: 600; border-radius: 99px; padding: 2px 10px; white-space: nowrap; border: 1px solid currentColor; }
+.tag.given { color: var(--muted); } .tag.hand { color: var(--bad); } .tag.learned { color: var(--ok); } .tag.next { color: var(--ink); }
+.ideas { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; max-width: 72ch; }
+@media (max-width: 640px) { .layer { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<main>
+  <header>
+    <h1>InfoCell: the concept</h1>
+    <p class="lead">What an info cell is, how a grid becomes cells, how a rule is searched for, and which layers sit on top of each other. This page is about the ideas, not the code.</p>
+    <nav class="toc" aria-label="Contents">
+      <a href="#cells">1 · The cell world</a>
+      <a href="#grid">2 · From grid to program</a>
+      <a href="#search">3 · Searching</a>
+      <a href="#layers">4 · The layers</a>
+      <a href="#formal">5 · A formal system</a>
+    </nav>
+  </header>
+
+  <!-- PART 1 -->
+  <section id="cells">
+    <h2><span class="n">Part 1</span>The cell world</h2>
+    <p>Everything is a cell: a number, a pixel, a grid, an object, a rule. A cell is a set of slots, and each slot holds another cell. There are only a few primitive instructions:</p>
+    <div class="figure" style="padding:14px 16px">
+      <table>
+        <thead><tr><th>Instruction</th><th>What it does</th><th>What is true afterwards</th></tr></thead>
+        <tbody>
+          <tr><td><code>SET(cell, key, value)</code></td><td>puts value into the slot key</td><td><code>GET(cell, key) == value</code></td></tr>
+          <tr><td><code>GET(cell, key)</code></td><td>reads the slot</td><td>nothing changes</td></tr>
+          <tr><td><code>NEW(type)</code></td><td>creates a cell</td><td>one more cell exists</td></tr>
+          <tr><td><code>ERASE(cell, key)</code></td><td>removes the slot</td><td><code>HAS(cell, key) == false</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>The key idea is to think in time: the world before an instruction and the world after it. After <code>SET(cell, key, value)</code>, the fact <code>GET(cell, key) == value</code> holds. Learning turns this around: given a fact that must hold afterwards, which instructions make it true?</p>
+    <div class="figure">
+      <div class="playground">
+        <div class="pg-controls">
+          <label>cell <select id="pgCell"></select></label>
+          <label>key <input id="pgKey" value="color" size="8"></label>
+          <label>value <input id="pgVal" value="red" size="8"></label>
+          <button id="pgSet" type="button">SET</button>
+          <button id="pgGet" type="button" class="ghost">GET</button>
+          <button id="pgErase" type="button" class="ghost">ERASE</button>
+          <button id="pgNew" type="button" class="ghost">NEW cell</button>
+        </div>
+        <div id="pgWorld" class="pg-world"></div>
+        <div id="pgLog" class="pg-log mono"></div>
+      </div>
+    </div>
+    <p class="note">A value written as <code>@c2</code> is a link to cell c2. Links are how cells form a world: a pixel's <code>up</code> slot holds the pixel above it, and an object's <code>pixels</code> slot holds its pixels.</p>
+    <div class="notes">
+      <div><h3>Data cells and active cells</h3><p>A data cell only holds slots. An active cell is an instruction: activating it changes the world, and it reports a result in its own <code>value</code> slot. There is no central processor; every active cell is a small one.</p></div>
+      <div><h3>Types are cells too</h3><p>A type says which slots its cells have. Pixel, Grid, Number and List are types, and so are the instructions themselves. The type graph is the meta level: the cells that describe cells.</p></div>
+      <div><h3>New cells</h3><p><code>NEW</code> is what makes the world open-ended. Without it, a fixed set of cells has finitely many states. With it, the world can grow: new objects, new rules, new concepts.</p></div>
+    </div>
+  </section>
+
+  <section id="grid">
+    <h2 style="font-size:28px">Part 2 · From grid to program</h2>
+    <p class="lead" style="margin-top:-8px">One ARC task, followed from the grid to the learned rule. The example is a real toy task: every red pixel grows a yellow cross.</p>
+  </section>
+
+  <!-- STEP 1 -->
+  <section>
+    <h2><span class="n">2.1</span>Grids become info cells</h2>
+    <div class="figure"><svg id="fig1" viewBox="0 0 960 600" role="img" aria-label="An input grid and an output grid; each input pixel is an info cell with x, y, color and links to its neighbours"></svg></div>
+    <div class="notes">
+      <div><h3>One pixel, one cell</h3><p>Each input pixel is a <code>Pixel</code> cell with the slots <code>x</code>, <code>y</code>, <code>color</code> and the links <code>up</code>, <code>down</code>, <code>left</code>, <code>right</code>. The <code>Grid</code> cell holds <code>width</code>, <code>height</code> and the list of pixels.</p></div>
+      <div><h3>Read with GET</h3><p>Every question about the input is a GET. <code>GET(GET(p, down), color)</code> is "the color below p". The cells are read-only: an input is never changed.</p></div>
+      <div><h3>The output is a postcondition</h3><p>The output grid is not executed. Each output pixel is a fact to explain: <code>GET(out(2,1), color) == yellow</code>. Learning means finding what makes all of these facts true at once.</p></div>
+    </div>
+  </section>
+
+  <!-- STEP 2 -->
+  <section>
+    <h2><span class="n">2.2</span>It learns the program</h2>
+    <div class="figure"><svg id="fig2" viewBox="0 0 960 400" role="img" aria-label="Two training pairs; the new output pixels are circled; the red pixels are grouped into object cells"></svg></div>
+    <div class="notes">
+      <div><h3>1 · Find what changed</h3><p>Compare each output with its input. The circled pixels are new: 4 in the first pair, 3 in the second, where the red pixel touches the border. New pixels guide which rule to try first. They are not the whole test: a program is accepted only if it rebuilds the <em>entire</em> output, so a pixel that looks unchanged must be explained too.</p></div>
+      <div><h3>2 · Perceive a layer above</h3><p>Same-color neighbours are grouped into <em>object</em> cells with slots like <code>color</code>, <code>size</code>, <code>position</code> and <code>holes</code>. The rules can then talk about objects as well as pixels.</p></div>
+      <div><h3>3 · Let hypotheses compete</h3><p>Every rule family proposes a program. A program is kept only if it reproduces every training output exactly. The shortest of those wins: compression decides.</p></div>
+    </div>
+    <div class="figure">
+      <table>
+        <thead><tr><th>Hypothesis</th><th>Reads (GET)</th><th>On the training pairs</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Pixel table on <code>{color}</code></td><td>the pixel's own color</td><td>black becomes black, and black becomes yellow: a contradiction</td><td><span class="chip bad">rejected</span></td></tr>
+          <tr><td>Pixel table on <code>{x}, {y}</code></td><td>position only</td><td>red sits in a different place in each pair, so the table only memorizes positions and fails leave-one-out</td><td><span class="chip bad">rejected</span></td></tr>
+          <tr><td>Pixel table on <code>{distance to foreground}</code></td><td>steps to the nearest colored pixel</td><td>fits: 0 → red, 1 → yellow, 2 to 6 → black, so 7 table entries</td><td><span class="chip ok">fits, longer</span></td></tr>
+          <tr><td>Object rule <code>objects[single color] addition: outline 4</code></td><td>each object's cells and their 4 neighbours</td><td>fits: one rule, "around every object add a 4-outline", and one learned color, yellow</td><td><span class="chip win">chosen</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="aside">The winning rule is the solver's real output for this task: <span class="mono">objects[single color] addition: outline 4</span>. Its next two candidates were the same rule with diagonal and multi-color objects. Every part of it is visible in the examples: what counts as an object, what is added, and in which color.</p>
+  </section>
+
+  <!-- STEP 2b -->
+  <section>
+    <h2><span class="n">2.2b</span>Cells built on cells</h2>
+    <p>A second real task, with bigger objects: <em>the largest object turns green</em>. It has three training pairs, and the solver solves it with <span class="mono">table[{is largest object}]</span>. Below is the first input and every cell the solver builds for it. Press <b>Replay</b> to watch the object cells being born, or click an object cell to see its pixels.</p>
+    <div class="figure">
+      <svg id="fig6" viewBox="0 0 960 640" role="img" aria-label="An input grid, its 49 pixel cells, the object cells grown from them by flood fill, and the learned rule cell"></svg>
+      <div class="controls">
+        <button id="play6" type="button">Replay</button>
+        <button id="step6" class="ghost" type="button">Next step</button>
+        <span id="trace6" class="mono" aria-live="polite"></span>
+      </div>
+    </div>
+    <div class="notes">
+      <div><h3>Birth of an object cell</h3><p>Perception scans the Pixel cells in reading order. The first colored pixel that no object owns yet triggers <code>NEW Object</code>. Then it follows <code>up</code>, <code>left</code>, <code>right</code> and <code>down</code>: every neighbour with the same color joins the same object. When nothing more joins, the object is complete.</p></div>
+      <div><h3>Slots are computed, not given</h3><p>An object's slots, such as <code>size</code>, <code>width</code>, <code>top</code> and <code>touches border</code>, are GETs over its member cells. Comparing objects adds relation slots like <code>largest</code>. Each slot is a new fact that no single pixel holds.</p></div>
+      <div><h3>The rule reads down the layers</h3><p>The rule cell asks each pixel: <code>GET(GET(p, object), largest)</code>, meaning "is my object the largest?" Yes → green, no → keep my color. The rule fits all three training pairs, and nothing shorter does.</p></div>
+    </div>
+    <p class="aside">Every cell here is one the solver really computes. Grouping same-colored 4-neighbours is one of 7 ways it parses a grid. The others are diagonal neighbours, multi-color objects, all pixels of one color, background regions, rows and columns. Each parse is tried, and the rule decides which one is used.</p>
+  </section>
+
+  <!-- STEP 3 -->
+  <section>
+    <h2><span class="n">2.3</span>The program runs on the test input</h2>
+    <div class="figure">
+      <svg id="fig3" viewBox="0 0 960 330" role="img" aria-label="Test input, the learned program, and the output it writes cell by cell"></svg>
+      <div class="controls">
+        <button id="play" type="button">Replay step by step</button>
+        <button id="stepBtn" class="ghost" type="button">Next step</button>
+        <span id="trace" aria-live="polite"></span>
+      </div>
+    </div>
+    <div class="notes">
+      <div><h3>Perceive</h3><p>The test input becomes cells, just as in step 1. Perception finds two single-color objects, both red.</p></div>
+      <div><h3>Execute</h3><p>For each object, the program GETs the 4 neighbours of its cells. Each neighbour that is free background gets <code>SET(out(x,y), color, yellow)</code>.</p></div>
+      <div><h3>Check</h3><p>The result matches the expected test output, so the task counts as solved. Every SET can be traced back to a rule and an object.</p></div>
+    </div>
+  </section>
+
+  <!-- STEP 4 -->
+  <section>
+    <h2><span class="n">2.4</span>When the output is bigger: new cells</h2>
+    <p>The red-cross task only recolors pixels that already exist. A 2×2 input with a 4×4 output is different: 12 of the output pixels have no input pixel of their own. Each one has to be created with <code>NEW</code>, and the program must say where its color comes from. The simplest answer is a link to a <em>parent</em> cell in the input. Click any output pixel to see its parent.</p>
+    <div class="figure"><svg id="fig4" viewBox="0 0 960 300" role="img" aria-label="A 2 by 2 input grows into a 4 by 4 output in two ways: scaled, where each new cell copies the input cell at x div 2, y div 2, and tiled, where it copies x mod 2, y mod 2"></svg>
+      <div class="controls"><span id="trace4" class="mono" aria-live="polite"></span></div>
+    </div>
+    <div class="notes">
+      <div><h3>Scale up</h3><p>The parent is <code>(x div 2, y div 2)</code>, so every input cell gets a 2×2 block of children. The solver learns this as <span class="mono">scale up</span>.</p></div>
+      <div><h3>Tile</h3><p>The parent is <code>(x mod 2, y mod 2)</code>, so the whole input repeats. The solver learns this as <span class="mono">tile with symmetries</span>. Both toy tasks are solved.</p></div>
+      <div><h3>Why a link compresses</h3><p>Listing 16 output colors costs 16 × log₂10 ≈ 53 bits per example. "Copy the parent at x div 2" costs a few bits once and fits every example.</p></div>
+    </div>
+
+    <h3>3×3 → 9×9: a cell with two parents</h3>
+    <p>This is ARC training task <span class="mono">007bbfb7</span>. Every colored input pixel becomes a full copy of the input, and every black one becomes a black 3×3 block. Each of the 81 new cells needs <em>two</em> parents:</p>
+    <ul style="margin:0;padding-left:20px;max-width:68ch">
+      <li>a <b>block parent</b> <code>(x div 3, y div 3)</code>, which decides whether there is a copy here;</li>
+      <li>an <b>inner parent</b> <code>(x mod 3, y mod 3)</code>, which gives the color.</li>
+    </ul>
+    <div class="figure"><svg id="fig5" viewBox="0 0 960 380" role="img" aria-label="A 3 by 3 input and its 9 by 9 output; the selected output cell links to a block parent and an inner parent in the input"></svg>
+      <div class="controls"><span id="trace5" class="mono" aria-live="polite"></span></div>
+    </div>
+    <div class="figure">
+      <table>
+        <thead><tr><th>Block parent color</th><th>Inner parent color</th><th>New cell color</th></tr></thead>
+        <tbody>
+          <tr><td>black</td><td>any</td><td>black</td></tr>
+          <tr><td>orange</td><td>black</td><td>black</td></tr>
+          <tr><td>orange</td><td>orange</td><td>orange</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="notes">
+      <div><h3>The rule is a 3-row table</h3><p><code>out(x,y) = T[ in(x div 3, y div 3), in(x mod 3, y mod 3) ]</code>. It is the same kind of pixel table as in step 2, except that the two features are two different parents.</p></div>
+      <div><h3>How the solver does it</h3><p>A built-in family, <span class="mono">self-similar</span>, does exactly this. It failed at first because it took the most frequent color, orange, as background. With the same rule as everywhere else (0 if present), it now solves <span class="mono">007bbfb7</span>.</p></div>
+      <div><h3>The general version</h3><p>The family is hand-written for this one shape. The general form would let a new cell keep <em>both</em> parent links and let the pixel table read features from both. Then the same 3-row table would be learned rather than built in.</p></div>
+    </div>
+    <p class="aside">This is where cell creation and compression meet. A new cell only exists if the program creates it. It is worth creating only if the links it carries let the rule be shorter than listing its color. The same test can decide when a whole new <em>concept</em> cell is worth adding to the library.</p>
+  </section>
+
+  <!-- PART 3 -->
+  <section id="search">
+    <h2><span class="n">Part 3</span>Searching</h2>
+    <p>Learning is search: among many candidate explanations, find the ones that fit every example, and prefer the shortest. There are two ways to search.</p>
+
+    <h3>Backward: which tool makes the fact true?</h3>
+    <p>Start from the fact that must hold, <code>after == value</code>, and look for a tool among the existing operations that produces it from the value before. A tool counts only if it explains every example; it is then applied to the test input.</p>
+    <div class="figure" style="padding:14px 16px;display:flex;flex-direction:column;gap:10px">
+      <div class="pg-controls">
+        <label>sequence <input id="tfSeq" value="1, 3, 9" size="16"></label>
+        <button id="tfRun" type="button">Find tools</button>
+        <span id="tfSource" class="note"></span>
+      </div>
+      <div id="tfOut"></div>
+    </div>
+    <p class="note">These are real results of the original InfoCell ToolFinder. In 1, 2, 1, 2 no single tool explains both steps: alternation needs two operations, or a memory of the step before.</p>
+
+    <h3>Forward: build programs, keep the shortest that fits</h3>
+    <p>Combine steps into programs, run each one on the examples, and keep those that reproduce every output exactly. Among those, the shortest description wins. Chaining steps grows fast, so only a beam of the most promising states survives each level.</p>
+    <div class="figure" style="padding:14px 16px;display:flex;flex-direction:column;gap:12px">
+      <div class="pg-controls">
+        <label>steps to choose from <input id="bsSteps" type="range" min="5" max="120" value="74"></label><span id="bsStepsV" class="mono"></span>
+        <label>depth <input id="bsDepth" type="range" min="1" max="8" value="3"></label><span id="bsDepthV" class="mono"></span>
+        <label>beam <input id="bsBeam" type="range" min="10" max="5000" step="10" value="500"></label><span id="bsBeamV" class="mono"></span>
+      </div>
+      <svg id="bsSvg" viewBox="0 0 900 220" role="img" aria-label="Number of programs per depth, with and without a beam"></svg>
+    </div>
+    <div class="notes">
+      <div><h3>Without a beam</h3><p>Every extra step multiplies the count by the number of steps: depth 5 with 74 steps is over two billion programs.</p></div>
+      <div><h3>With a beam</h3><p>Each level only expands the states that survived, so every level costs the same. Depth gets cheap; what limits it is whether the right intermediate state survives.</p></div>
+      <div><h3>Depth is not the point</h3><p>People solve ARC tasks in one to three moves, but each move is a big one. Deep chains of tiny steps are the opposite of compression. Better steps help more than deeper search.</p></div>
+    </div>
+  </section>
+
+  <!-- PART 4 -->
+  <section id="layers">
+    <h2><span class="n">Part 4</span>The layers</h2>
+    <p>Each layer is made of cells that are built from the cells below it. A rule can read any layer.</p>
+    <div class="layers" id="layerStack"></div>
+    <p class="note">Hand-written means the kinds of things the layer contains were typed in: what an object is, what an outline is. Learned means the system chooses them from the examples. Emergence is when a lower layer produces the vocabulary of a higher one on its own.</p>
+  </section>
+
+  <!-- PART 5 -->
+  <section id="formal">
+    <h2><span class="n">Part 5</span>A formal system</h2>
+    <p>In Gödel, Escher, Bach a formal system is an alphabet, axioms and rules of inference; theorems are what the rules can derive. The cell world maps onto it directly:</p>
+    <div class="figure" style="padding:14px 16px">
+      <table>
+        <thead><tr><th>Formal system</th><th>Cell world</th></tr></thead>
+        <tbody>
+          <tr><td>a string</td><td>a world state: cells and their slots</td></tr>
+          <tr><td>axioms</td><td>the initial world: the types, the input grid</td></tr>
+          <tr><td>rules of inference</td><td>the primitive instructions: SET, GET, NEW, ERASE and the control instructions</td></tr>
+          <tr><td>theorems</td><td>the world states that can be reached</td></tr>
+          <tr><td>is X a theorem?</td><td>can a world be reached where <code>GET(cell, key) == value</code>?</td></tr>
+          <tr><td>finding a derivation</td><td>finding the tools that make it true</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="notes">
+      <div><h3>Positive examples only</h3><p>From valid strings alone a grammar cannot be guaranteed (Gold, 1967). But the shortest description the examples fit is still a good guess: from 36 theorems of the pq-system the pattern <code>x p y q x y</code>, Hofstadter's own rule, comes out.</p></div>
+      <div><h3>Figure and ground</h3><p>Holes and background regions are information too. An object with holes is a figure; its holes are negative-space objects, linked to their container. The inside of a ring only exists if figure and ground connect in opposite ways.</p></div>
+      <div><h3>Repetition</h3><p>Two unrelated problems miss the same idea: multiplication in the tq-system and "repeat this shape until the edge" in ARC. A primitive for repetition is a candidate axiom, not one more hand-written rule.</p></div>
+    </div>
+    <h3>Open ideas</h3>
+    <ul class="ideas">
+      <li><b>Create a cell when it shortens the description.</b> A pattern that repeats becomes a cell; a concept that saves nothing is dropped.</li>
+      <li><b>Pixels in several objects.</b> Parts inside wholes, and the pixel where two lines cross.</li>
+      <li><b>Negative space as objects.</b> Holes as cells linked to their container.</li>
+      <li><b>Edges that wrap around</b> for some colors or shapes and not for others, chosen by the examples.</li>
+      <li><b>A learned drawing order</b> when two rules paint the same pixel.</li>
+      <li><b>Repetition as a primitive</b>, so that loops can be composed instead of written.</li>
+    </ul>
+  </section>
+</main>
+
+<script>
+(() => {
+  const ARC = ["#111111","#1e93ff","#f93c31","#4fcc30","#ffdc00","#999999","#e53aa3","#ff851b","#87d8f1","#921231"];
+  const NS = "http://www.w3.org/2000/svg";
+  const el = (tag, attrs, parent, text) => {
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    if (text !== undefined) e.textContent = text;
+    if (parent) parent.appendChild(e);
+    return e;
+  };
+  const make = (w, h, reds) => { const g = Array.from({length: h}, () => Array(w).fill(0)); reds.forEach(([x, y]) => g[y][x] = 2); return g; };
+  const outline = (a) => {
+    const b = a.map(r => r.slice()), add = [];
+    a.forEach((row, y) => row.forEach((c, x) => {
+      if (c !== 2) return;
+      [[1,0],[-1,0],[0,1],[0,-1]].forEach(([dx, dy]) => {
+        const X = x + dx, Y = y + dy;
+        if (a[Y] && a[Y][X] === 0 && b[Y][X] !== 4) { b[Y][X] = 4; add.push([X, Y, x, y]); }
+      });
+    }));
+    return { grid: b, add };
+  };
+  const drawGrid = (parent, g, ox, oy, s, opts = {}) => {
+    const grp = el("g", {}, parent);
+    g.forEach((row, y) => row.forEach((c, x) => {
+      el("rect", { x: ox + x * s, y: oy + y * s, width: s, height: s, fill: ARC[c], class: "cellLine" }, grp);
+    }));
+    if (opts.ring) opts.ring.forEach(([x, y]) =>
+      el("circle", { cx: ox + x * s + s / 2, cy: oy + y * s + s / 2, r: s * 0.36, fill: "none", stroke: "var(--ink)", "stroke-width": 2.2 }, grp));
+    return grp;
+  };
+
+  const in1 = make(5, 5, [[2, 2]]), in2 = make(5, 5, [[3, 0]]);
+  const out1 = outline(in1), out2 = outline(in2);
+
+  // ---------- grid and cells ----------
+  {
+    const svg = document.getElementById("fig1");
+    el("text", { x: 30, y: 34, class: "t-head" }, svg, "World of info cells");
+    el("rect", { x: 30, y: 54, width: 190, height: 150, rx: 10, class: "box" }, svg);
+    [["type", "Grid"], ["width", "5"], ["height", "5"], ["pixels", "[25 cells]"]].forEach(([k, v], i) => {
+      el("text", { x: 46, y: 86 + i * 30, class: "t-label" }, svg, k);
+      el("text", { x: 120, y: 86 + i * 30, class: "t-mono" }, svg, v);
+    });
+    const cx0 = 280, cy0 = 54, cs = 26, cg = 7;
+    const cellPos = (x, y) => [cx0 + x * (cs + cg), cy0 + y * (cs + cg)];
+    el("path", { d: `M220 160 C 250 160, 250 120, ${cx0 - 4} 120`, class: "wire dash" }, svg);
+    in1.forEach((row, y) => row.forEach((c, x) => {
+      const [px, py] = cellPos(x, y);
+      el("rect", { x: px, y: py, width: cs, height: cs, rx: 7, fill: c === 2 ? ARC[2] : "var(--panel)", stroke: (x === 2 && y === 1) ? "var(--ink)" : "var(--cellLine)", "stroke-width": (x === 2 && y === 1) ? 2.5 : 1 }, svg);
+    }));
+    const [hx, hy] = cellPos(2, 1), mid = cs / 2;
+    [[0, -1, "up"], [0, 1, "down"], [-1, 0, "left"], [1, 0, "right"]].forEach(([dx, dy]) => {
+      const [nx, ny] = cellPos(2 + dx, 1 + dy);
+      el("line", { x1: hx + mid + dx * mid, y1: hy + mid + dy * mid, x2: nx + mid - dx * mid, y2: ny + mid - dy * mid, stroke: "var(--ink)", "stroke-width": 2.5 }, svg);
+    });
+    el("text", { x: cx0, y: cy0 + 5 * (cs + cg) + 14, class: "t-label" }, svg, "one Pixel cell per input pixel");
+    const ex = 600, ey = 54;
+    el("rect", { x: ex, y: ey, width: 330, height: 236, rx: 10, class: "box-ink" }, svg);
+    el("text", { x: ex + 16, y: ey + 26, class: "t-head" }, svg, "Pixel cell (2, 1)");
+    [["type", "Pixel"], ["x", "2"], ["y", "1"], ["color", "black"], ["up", "→ Pixel (2, 0)"], ["down", "→ Pixel (2, 2)  red"], ["left", "→ Pixel (1, 1)"], ["right", "→ Pixel (3, 1)"]]
+      .forEach(([k, v], i) => {
+        el("text", { x: ex + 16, y: ey + 56 + i * 22, class: "t-label" }, svg, k);
+        el("text", { x: ex + 90, y: ey + 56 + i * 22, class: "t-mono" }, svg, v);
+      });
+    el("path", { d: `M${hx + cs + 2} ${hy + mid} C 520 ${hy + mid}, 540 110, ${ex - 2} 110`, class: "wire" }, svg);
+    el("circle", { cx: ex - 2, cy: 110, r: 3.5, fill: "var(--ink)" }, svg);
+
+    el("line", { x1: 30, y1: 330, x2: 930, y2: 330, stroke: "var(--line)", "stroke-width": 1.5 }, svg);
+
+    const s = 34, gy = 372;
+    drawGrid(svg, in1, 90, gy, s);
+    el("rect", { x: 90 + 2 * s, y: gy + s, width: s, height: s, fill: "none", stroke: "var(--ink)", "stroke-width": 3 }, svg);
+    el("text", { x: 90, y: gy + 5 * s + 26, class: "t-label" }, svg, "ARC input grid");
+    el("path", { d: `M${90 + 2.5 * s} ${gy + s} C ${90 + 2.5 * s} 300, ${hx + mid} 270, ${hx + mid} ${cy0 + 5 * (cs + cg) + 20}`, class: "wire dash" }, svg);
+    el("path", { d: "M 330 457 L 520 457", class: "wire", "marker-end": "url(#arr1)" }, svg);
+    const defs = el("defs", {}, svg);
+    const m = el("marker", { id: "arr1", viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 8, markerHeight: 8, orient: "auto" }, defs);
+    el("path", { d: "M0 0 L10 5 L0 10 z", fill: "var(--ink)" }, m);
+    el("text", { x: 340, y: 444, class: "t-label" }, svg, "a program we must find");
+    drawGrid(svg, out1.grid, 560, gy, s);
+    el("text", { x: 560, y: gy + 5 * s + 26, class: "t-label" }, svg, "ARC output grid");
+    el("rect", { x: 560 + 2 * s, y: gy + s, width: s, height: s, fill: "none", stroke: "var(--ink)", "stroke-width": 3 }, svg);
+    el("text", { x: 750, y: gy + 40, class: "t-mono t-ink" }, svg, "GET(out(2,1), color)");
+    el("text", { x: 750, y: gy + 60, class: "t-mono t-ink" }, svg, "   == yellow");
+    el("text", { x: 750, y: gy + 86, class: "t-label" }, svg, "a fact to explain,");
+    el("text", { x: 750, y: gy + 104, class: "t-label" }, svg, "not a cell to run");
+    el("line", { x1: 560 + 3 * s + 2, y1: gy + 1.5 * s, x2: 744, y2: gy + 46, class: "wire dash" }, svg);
+  }
+
+  // ---------- learning ----------
+  {
+    const svg = document.getElementById("fig2");
+    const s = 26;
+    const pair = (ox, inG, out, label) => {
+      el("text", { x: ox, y: 34, class: "t-head" }, svg, label);
+      drawGrid(svg, inG, ox, 54, s);
+      el("text", { x: ox, y: 54 + 5 * s + 22, class: "t-label" }, svg, "input");
+      el("path", { d: `M${ox + 5 * s + 12} ${54 + 2.5 * s} L ${ox + 5 * s + 48} ${54 + 2.5 * s}`, class: "wire", "marker-end": "url(#arr2)" }, svg);
+      drawGrid(svg, out.grid, ox + 5 * s + 60, 54, s, { ring: out.add.map(a => [a[0], a[1]]) });
+      el("text", { x: ox + 5 * s + 60, y: 54 + 5 * s + 22, class: "t-label" }, svg, `output · ${out.add.length} new pixels`);
+    };
+    const defs = el("defs", {}, svg);
+    const m = el("marker", { id: "arr2", viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 8, markerHeight: 8, orient: "auto" }, defs);
+    el("path", { d: "M0 0 L10 5 L0 10 z", fill: "var(--ink)" }, m);
+    pair(30, in1, out1, "Training pair 1");
+    pair(520, in2, out2, "Training pair 2");
+
+    const oy = 262;
+    el("line", { x1: 30, y1: oy - 22, x2: 930, y2: oy - 22, stroke: "var(--line)", "stroke-width": 1.5 }, svg);
+    const obj = (ox, title, rows) => {
+      el("rect", { x: ox, y: oy, width: 280, height: 118, rx: 10, class: "box-ink" }, svg);
+      el("text", { x: ox + 16, y: oy + 26, class: "t-head" }, svg, title);
+      rows.forEach(([k, v], i) => {
+        el("text", { x: ox + 16, y: oy + 52 + i * 21, class: "t-label" }, svg, k);
+        el("text", { x: ox + 110, y: oy + 52 + i * 21, class: "t-mono" }, svg, v);
+      });
+    };
+    obj(30, "Object cell · pair 1", [["color", "red"], ["size", "1"], ["box", "x 2, y 2"], ["touches", "nothing"]]);
+    obj(520, "Object cell · pair 2", [["color", "red"], ["size", "1"], ["box", "x 3, y 0"], ["touches", "top border"]]);
+    el("path", { d: `M${30 + 2.5 * s} ${54 + 3 * s} C ${30 + 2.5 * s} 230, 120 240, 120 ${oy}`, class: "wire dash" }, svg);
+    el("path", { d: `M${520 + 3.5 * s} ${54 + 1 * s} C ${520 + 3.5 * s} 230, 610 240, 610 ${oy}`, class: "wire dash" }, svg);
+    el("text", { x: 340, y: oy + 40, class: "t-label" }, svg, "grouped from Pixel cells:");
+    el("text", { x: 340, y: oy + 60, class: "t-label" }, svg, "same color, 4-connected");
+    el("text", { x: 340, y: oy + 92, class: "t-mono t-ink" }, svg, "rule: add outline 4, yellow");
+  }
+
+  // ---------- running ----------
+  const svg3 = document.getElementById("fig3");
+  const test = make(6, 6, [[1, 1], [4, 3]]);
+  const result = outline(test);
+  const s3 = 34, ix = 30, iy = 46, ox = 660;
+  el("text", { x: ix, y: 30, class: "t-head" }, svg3, "Test input");
+  drawGrid(svg3, test, ix, iy, s3);
+  el("text", { x: ox, y: 30, class: "t-head" }, svg3, "Output being written");
+  const prog = el("g", {}, svg3);
+  el("rect", { x: 280, y: 60, width: 350, height: 170, rx: 10, class: "box-ink" }, prog);
+  el("text", { x: 298, y: 88, class: "t-head" }, prog, "Learned program");
+  ["for each object o  (single color):", "  for each cell c of o:", "    for n in up, down, left, right:", "      if GET(c, n) is background:", "        SET(out(n), color, yellow)"]
+    .forEach((line, i) => el("text", { x: 298, y: 116 + i * 22, class: "t-mono", "xml:space": "preserve" }, prog, line));
+  const defs3 = el("defs", {}, svg3);
+  const m3 = el("marker", { id: "arr3", viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 8, markerHeight: 8, orient: "auto" }, defs3);
+  el("path", { d: "M0 0 L10 5 L0 10 z", fill: "var(--ink)" }, m3);
+  el("path", { d: "M 248 145 L 274 145", class: "wire", "marker-end": "url(#arr3)" }, svg3);
+  el("path", { d: "M 634 145 L 654 145", class: "wire", "marker-end": "url(#arr3)" }, svg3);
+
+  const outLayer = el("g", {}, svg3);
+  const marks = el("g", {}, svg3);
+  const trace = document.getElementById("trace");
+  const steps = 2 + result.add.length;
+  let step = steps;
+
+  const render = () => {
+    outLayer.replaceChildren(); marks.replaceChildren();
+    const g = test.map(r => r.slice());
+    const done = Math.max(0, step - 2);
+    result.add.slice(0, done).forEach(([x, y]) => g[y][x] = 4);
+    drawGrid(outLayer, g, ox, iy, s3);
+    if (step >= 1) [[1, 1], [4, 3]].forEach(([x, y], i) => {
+      el("rect", { x: ix + x * s3 - 4, y: iy + y * s3 - 4, width: s3 + 8, height: s3 + 8, rx: 6, fill: "none", stroke: "var(--ink)", "stroke-width": 2.5, "stroke-dasharray": "4 3" }, marks);
+      el("text", { x: ix + x * s3 + s3 + 6, y: iy + y * s3 - 2, class: "t-mono t-ink" }, marks, "o" + (i + 1));
+    });
+    if (done > 0 && step < steps) {
+      const [x, y] = result.add[done - 1];
+      el("rect", { x: ox + x * s3, y: iy + y * s3, width: s3, height: s3, fill: "none", stroke: "var(--ink)", "stroke-width": 3 }, marks);
+    }
+    if (step === 0) trace.textContent = "Copy the input. Nothing has changed yet.";
+    else if (step === 1) trace.textContent = "Perceive: 2 objects, o1 at (1,1) and o2 at (4,3), both red.";
+    else if (step < steps) { const [x, y, sx, sy] = result.add[done - 1]; trace.textContent = `o${sx === 1 ? 1 : 2}: SET(out(${x},${y}), color, yellow)`; }
+    else trace.textContent = `Done: ${result.add.length} SETs. The result equals the expected test output.`;
+    document.getElementById("stepBtn").disabled = step >= steps;
+  };
+
+  let timer = null;
+  const stop = () => { if (timer) { clearInterval(timer); timer = null; } };
+  document.getElementById("play").addEventListener("click", () => {
+    stop(); step = 0; render();
+    timer = setInterval(() => { step++; render(); if (step >= steps) stop(); }, 700);
+  });
+  document.getElementById("stepBtn").addEventListener("click", () => {
+    stop(); if (step >= steps) step = 0; else step++; render();
+  });
+  render();
+
+  // ---------- object cells ----------
+  {
+    const svg = document.getElementById("fig6"), trace = document.getElementById("trace6");
+    const G = [[0,0,0,0,0,0,0],[0,2,0,0,1,1,0],[0,2,0,0,1,1,0],[0,2,2,0,1,0,0],[0,0,0,0,0,0,0],[0,0,0,4,0,0,0],[0,0,0,0,0,0,0]];
+    const W = 7, H = 7, CN = ["black","blue","red","green","yellow"];
+    const owner = G.map(r => r.map(() => -1)), seen = G.map(r => r.map(() => false));
+    const objs = [], events = [];
+    const dirs = [[0,-1,"up"],[-1,0,"left"],[1,0,"right"],[0,1,"down"]];
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      if (seen[y][x] || !G[y][x]) continue;
+      const id = objs.length, o = { id, color: G[y][x], px: [] };
+      objs.push(o); seen[y][x] = true;
+      events.push({ t: "new", id, x, y });
+      const stack = [[x, y, null, null]];
+      while (stack.length) {
+        const [cx, cy, from, dir] = stack.pop();
+        o.px.push([cx, cy]); owner[cy][cx] = id;
+        events.push({ t: "join", id, x: cx, y: cy, from, dir });
+        for (const [dx, dy, name] of dirs) {
+          const nx = cx + dx, ny = cy + dy;
+          if (nx < 0 || ny < 0 || nx >= W || ny >= H || seen[ny][nx] || G[ny][nx] !== G[cy][cx]) continue;
+          seen[ny][nx] = true; stack.push([nx, ny, [cx, cy], name]);
+        }
+      }
+      events.push({ t: "done", id });
+    }
+    objs.forEach(o => {
+      const xs = o.px.map(p => p[0]), ys = o.px.map(p => p[1]);
+      o.size = o.px.length; o.left = Math.min(...xs); o.top = Math.min(...ys);
+      o.w = Math.max(...xs) - o.left + 1; o.h = Math.max(...ys) - o.top + 1;
+      o.border = o.px.some(([x, y]) => x === 0 || y === 0 || x === W - 1 || y === H - 1);
+    });
+    const maxSize = Math.max(...objs.map(o => o.size));
+    events.push({ t: "relations" }, { t: "rule" });
+
+    const S = 36, gx = 30, gy = 64;
+    const ds = 20, dg = 6, mx = 330, my = 64;
+    const cx0 = 560, cw = 370, ch = 104, cg = 12;
+    const dot = (x, y) => [mx + x * (ds + dg) + ds / 2, my + y * (ds + dg) + ds / 2];
+    el("text", { x: gx, y: 40, class: "t-head" }, svg, "Input grid (pair 1)");
+    el("text", { x: mx, y: 40, class: "t-head" }, svg, "49 Pixel cells");
+    el("text", { x: cx0, y: 40, class: "t-head" }, svg, "Object cells");
+    el("text", { x: 330, y: 470, class: "t-head" }, svg, "Rule cell");
+    el("text", { x: gx, y: 400, class: "t-head" }, svg, "Output from the rule");
+    const layer = el("g", {}, svg);
+    let step = events.length, sel = -1, timer = null;
+    const ON = "var(--ink)";
+
+    const render = () => {
+      layer.replaceChildren();
+      const ev = events.slice(0, step);
+      const joined = new Map();
+      const born = new Set(), done = new Set();
+      let relations = false, rule = false, cur = null;
+      ev.forEach(e => {
+        if (e.t === "new") born.add(e.id);
+        if (e.t === "join") { joined.set(e.x + "," + e.y, e.id); cur = e; }
+        if (e.t === "done") done.add(e.id);
+        if (e.t === "relations") relations = true;
+        if (e.t === "rule") rule = true;
+      });
+      const last = ev[ev.length - 1];
+      drawGrid(layer, G, gx, gy, S);
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+        const [px, py] = dot(x, y), id = joined.get(x + "," + y);
+        el("rect", { x: px - ds / 2, y: py - ds / 2, width: ds, height: ds, rx: 5,
+          fill: G[y][x] ? (["#111","#1e93ff","#f93c31","#4fcc30","#ffdc00"][G[y][x]]) : "var(--panel)",
+          stroke: id !== undefined && (sel === -1 || sel === id) ? ON : "var(--cellLine)", "stroke-width": id !== undefined ? 2.5 : 1 }, layer);
+      }
+      ev.filter(e => e.t === "join" && e.from && (sel === -1 || sel === e.id)).forEach(e => {
+        const [ax, ay] = dot(e.from[0], e.from[1]), [bx, by] = dot(e.x, e.y);
+        el("line", { x1: ax, y1: ay, x2: bx, y2: by, stroke: ON, "stroke-width": 3 }, layer);
+      });
+      objs.forEach((o, i) => {
+        if (!born.has(o.id)) return;
+        const y0 = 50 + i * (ch + cg), active = sel === -1 || sel === o.id;
+        const card = el("g", { style: "cursor:pointer", opacity: active ? 1 : 0.45 }, layer);
+        el("rect", { x: cx0, y: y0, width: cw, height: ch, rx: 10, class: done.has(o.id) ? "box-ink" : "box" }, card);
+        el("rect", { x: cx0 + 14, y: y0 + 14, width: 14, height: 14, rx: 3, fill: ["#111","#1e93ff","#f93c31","#4fcc30","#ffdc00"][o.color] }, card);
+        el("text", { x: cx0 + 36, y: y0 + 26, class: "t-head" }, card, `Object o${o.id + 1}`);
+        const members = [...joined.values()].filter(v => v === o.id).length;
+        const rows = [["color", CN[o.color]], ["size", done.has(o.id) ? String(o.size) : members + "…"]];
+        if (done.has(o.id)) rows.push(["box", `${o.w}×${o.h} at (${o.left},${o.top})`], ["touches border", o.border ? "yes" : "no"]);
+        rows.forEach(([k, v], r) => {
+          const col = r % 2, row = Math.floor(r / 2);
+          el("text", { x: cx0 + 16 + col * 180, y: y0 + 52 + row * 22, class: "t-label" }, card, k);
+          el("text", { x: cx0 + 16 + col * 180 + (col ? 108 : 52), y: y0 + 52 + row * 22, class: "t-mono" }, card, v);
+        });
+        if (relations) {
+          el("text", { x: cx0 + 16, y: y0 + 96, class: "t-label" }, card, "largest");
+          el("text", { x: cx0 + 68, y: y0 + 96, class: "t-mono t-ink" }, card, o.size === maxSize ? "yes" : "no");
+          el("text", { x: cx0 + 196, y: y0 + 96, class: "t-label" }, card, "size rank");
+          el("text", { x: cx0 + 270, y: y0 + 96, class: "t-mono" }, card, String(1 + objs.filter(p => p.size > o.size).length));
+        }
+        card.addEventListener("click", () => { sel = sel === o.id ? -1 : o.id; render(); });
+        if (active) {
+          const [fx, fy] = dot(o.px[0][0], o.px[0][1]);
+          el("path", { d: `M${cx0} ${y0 + ch / 2} C ${cx0 - 50} ${y0 + ch / 2}, ${fx + 60} ${fy}, ${fx + ds / 2 + 2} ${fy}`, class: "wire dash" }, layer);
+        }
+      });
+      if (cur && last && last.t !== "relations" && last.t !== "rule") {
+        el("rect", { x: gx + cur.x * S, y: gy + cur.y * S, width: S, height: S, fill: "none", stroke: ON, "stroke-width": 4 }, layer);
+      }
+      const ry = 486;
+      el("rect", { x: 330, y: ry, width: 600, height: 136, rx: 10, class: rule ? "box-ink" : "box", opacity: rule ? 1 : 0.5 }, layer);
+      el("text", { x: 348, y: ry + 28, class: "t-mono" }, layer, "table[{is largest object}]   learned from 3 pairs");
+      el("text", { x: 348, y: ry + 56, class: "t-label" }, layer, "reads");
+      el("text", { x: 420, y: ry + 56, class: "t-mono t-ink" }, layer, "GET(GET(p, object), largest)");
+      el("text", { x: 348, y: ry + 84, class: "t-label" }, layer, "yes");
+      el("text", { x: 420, y: ry + 84, class: "t-mono" }, layer, "→ green");
+      el("text", { x: 348, y: ry + 110, class: "t-label" }, layer, "no");
+      el("text", { x: 420, y: ry + 110, class: "t-mono" }, layer, "→ keep my own color");
+      const out = G.map(r => r.slice());
+      if (rule) objs.forEach(o => { if (o.size === maxSize) o.px.forEach(([x, y]) => out[y][x] = 3); });
+      drawGrid(layer, out, gx, 420, 28);
+      if (rule) {
+        const big = objs.find(o => o.size === maxSize), i = objs.indexOf(big);
+        el("path", { d: `M${cx0 + cw / 2} ${50 + i * (ch + cg) + ch} L ${cx0 + cw / 2} ${ry}`, class: "wire", "marker-end": "url(#arr6)" }, layer);
+      }
+      if (!last) trace.textContent = "Start: 49 Pixel cells, no objects yet.";
+      else if (last.t === "new") trace.textContent = `GET(pixel(${last.x},${last.y}), color) = ${CN[G[last.y][last.x]]}, owned by no object → NEW Object o${last.id + 1}`;
+      else if (last.t === "join") trace.textContent = last.from
+        ? `GET(pixel(${last.from[0]},${last.from[1]}), ${last.dir}) = pixel(${last.x},${last.y}), same color → joins o${last.id + 1}`
+        : `pixel(${last.x},${last.y}) is the first member of o${last.id + 1}`;
+      else if (last.t === "done") trace.textContent = `o${last.id + 1} complete: no unowned same-color neighbour left. Its slots are computed.`;
+      else if (last.t === "relations") trace.textContent = "Compare objects: relation slots appear (largest, size rank).";
+      else trace.textContent = "Rule cell: the largest object turns green, everything else keeps its color.";
+      document.getElementById("step6").disabled = step >= events.length;
+    };
+    const defs = el("defs", {}, svg);
+    const m = el("marker", { id: "arr6", viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 8, markerHeight: 8, orient: "auto" }, defs);
+    el("path", { d: "M0 0 L10 5 L0 10 z", fill: "var(--ink)" }, m);
+    const stop = () => { if (timer) { clearInterval(timer); timer = null; } };
+    document.getElementById("play6").addEventListener("click", () => {
+      stop(); step = 0; sel = -1; render();
+      timer = setInterval(() => { step++; render(); if (step >= events.length) stop(); }, 650);
+    });
+    document.getElementById("step6").addEventListener("click", () => { stop(); if (step < events.length) step++; render(); });
+    render();
+  }
+
+  // ---------- one parent ----------
+  {
+    const svg = document.getElementById("fig4"), trace = document.getElementById("trace4");
+    const inG = [[3, 0], [4, 2]];
+    const S = 50, ix = 40, iy = 70, s = 34;
+    const views = [
+      { name: "scale up", ox: 300, parent: (x, y) => [x >> 1, y >> 1], rule: "x div 2, y div 2" },
+      { name: "tile", ox: 640, parent: (x, y) => [x & 1, y & 1], rule: "x mod 2, y mod 2" },
+    ];
+    el("text", { x: ix, y: 40, class: "t-head" }, svg, "Input 2×2");
+    drawGrid(svg, inG, ix, iy, S);
+    const hl = el("g", {}, svg);
+    let sel = { v: 0, x: 3, y: 2 };
+    const draw = () => {
+      hl.replaceChildren();
+      const v = views[sel.v], [px, py] = v.parent(sel.x, sel.y);
+      el("rect", { x: ix + px * S, y: iy + py * S, width: S, height: S, fill: "none", stroke: "var(--ink)", "stroke-width": 4 }, hl);
+      el("rect", { x: v.ox + sel.x * s, y: iy + sel.y * s, width: s, height: s, fill: "none", stroke: "var(--ink)", "stroke-width": 4 }, hl);
+      el("path", { d: `M${ix + px * S + S} ${iy + py * S + S / 2} C 220 ${iy + py * S + S / 2}, ${v.ox - 40} ${iy + sel.y * s + s / 2}, ${v.ox + sel.x * s} ${iy + sel.y * s + s / 2}`, class: "wire dash" }, hl);
+      trace.textContent = `${v.name}: NEW out(${sel.x},${sel.y}) with parent in(${px},${py}), color = GET(parent, color)`;
+    };
+    views.forEach((v, vi) => {
+      el("text", { x: v.ox, y: 40, class: "t-head" }, svg, v.name);
+      el("text", { x: v.ox, y: iy + 4 * s + 24, class: "t-label" }, svg, "parent = (" + v.rule + ")");
+      const g = Array.from({ length: 4 }, (_, y) => Array.from({ length: 4 }, (_, x) => { const [px, py] = v.parent(x, y); return inG[py][px]; }));
+      const grp = drawGrid(svg, g, v.ox, iy, s);
+      [...grp.children].forEach((r, i) => {
+        r.style.cursor = "pointer";
+        r.addEventListener("click", () => { sel = { v: vi, x: i % 4, y: Math.floor(i / 4) }; draw(); });
+      });
+    });
+    svg.appendChild(hl);
+    draw();
+  }
+
+  // ---------- two parents ----------
+  {
+    const svg = document.getElementById("fig5"), trace = document.getElementById("trace5");
+    const inG = [[0, 7, 7], [7, 7, 7], [0, 7, 7]];
+    const S = 56, ix = 40, iy = 70, s = 30, ox = 520;
+    const outG = Array.from({ length: 9 }, (_, y) => Array.from({ length: 9 }, (_, x) =>
+      inG[Math.floor(y / 3)][Math.floor(x / 3)] ? inG[y % 3][x % 3] : 0));
+    el("text", { x: ix, y: 40, class: "t-head" }, svg, "Input 3×3");
+    drawGrid(svg, inG, ix, iy, S);
+    el("text", { x: ox, y: 40, class: "t-head" }, svg, "Output 9×9 · 81 new cells");
+    const grp = drawGrid(svg, outG, ox, iy, s);
+    for (let k = 1; k < 3; k++) {
+      el("line", { x1: ox + k * 3 * s, y1: iy, x2: ox + k * 3 * s, y2: iy + 9 * s, stroke: "var(--line)", "stroke-width": 2.5 }, svg);
+      el("line", { x1: ox, y1: iy + k * 3 * s, x2: ox + 9 * s, y2: iy + k * 3 * s, stroke: "var(--line)", "stroke-width": 2.5 }, svg);
+    }
+    el("rect", { x: ix + 3 * S + 30, y: iy + 6, width: 18, height: 4, fill: "var(--ink)" }, svg);
+    el("text", { x: ix + 3 * S + 56, y: iy + 12, class: "t-label" }, svg, "block parent");
+    el("line", { x1: ix + 3 * S + 30, y1: iy + 34, x2: ix + 3 * S + 48, y2: iy + 34, stroke: "var(--ink)", "stroke-width": 3, "stroke-dasharray": "4 3" }, svg);
+    el("text", { x: ix + 3 * S + 56, y: iy + 38, class: "t-label" }, svg, "inner parent");
+    el("text", { x: ix, y: iy + 3 * S + 30, class: "t-label" }, svg, "Click an output cell to see its parents.");
+    const hl = el("g", {}, svg);
+    const name = c => c ? "orange" : "black";
+    let sel = [4, 1];
+    const draw = () => {
+      hl.replaceChildren();
+      const [x, y] = sel, bx = Math.floor(x / 3), by = Math.floor(y / 3), cx = x % 3, cy = y % 3;
+      el("rect", { x: ix + bx * S + 3, y: iy + by * S + 3, width: S - 6, height: S - 6, fill: "none", stroke: "var(--ink)", "stroke-width": 5 }, hl);
+      el("rect", { x: ix + cx * S + 9, y: iy + cy * S + 9, width: S - 18, height: S - 18, fill: "none", stroke: "var(--ink)", "stroke-width": 3, "stroke-dasharray": "5 3" }, hl);
+      el("rect", { x: ox + bx * 3 * s, y: iy + by * 3 * s, width: 3 * s, height: 3 * s, fill: "none", stroke: "var(--ink)", "stroke-width": 2, "stroke-dasharray": "6 4" }, hl);
+      el("rect", { x: ox + x * s, y: iy + y * s, width: s, height: s, fill: "none", stroke: "var(--ink)", "stroke-width": 4 }, hl);
+      el("path", { d: `M${ix + bx * S + S / 2} ${iy + by * S + S / 2} C 360 ${iy + by * S + S / 2}, 420 ${iy + y * s + s / 2}, ${ox + x * s} ${iy + y * s + s / 2}`, class: "wire" }, hl);
+      el("path", { d: `M${ix + cx * S + S / 2} ${iy + cy * S + S / 2} C 360 ${iy + cy * S + S / 2 + 40}, 420 ${iy + y * s + s / 2 + 20}, ${ox + x * s + s / 2} ${iy + y * s + s}`, class: "wire dash" }, hl);
+      const b = inG[by][bx], c = inG[cy][cx];
+      trace.textContent = `out(${x},${y}): block parent in(${bx},${by}) is ${name(b)}` +
+        (b ? `, so copy the inner parent in(${cx},${cy}): ${name(c)}` : ", so the cell stays black");
+    };
+    [...grp.children].forEach((r, i) => {
+      r.style.cursor = "pointer";
+      r.addEventListener("click", () => { sel = [i % 9, Math.floor(i / 9)]; draw(); });
+    });
+    svg.appendChild(hl);
+    draw();
+  }
+})();
+
+// ---------- playground ----------
+{
+  const world = { c1: { type: "Pixel", x: "2", y: "1", color: "black" }, c2: { type: "Pixel", x: "2", y: "0", color: "black" } };
+  world.c1.up = "@c2";
+  let n = 3, last = null;
+  const log = [], cellSel = document.getElementById("pgCell");
+  const draw = () => {
+    cellSel.replaceChildren(...Object.keys(world).map(k => { const o = document.createElement("option"); o.value = o.textContent = k; return o; }));
+    if (last) cellSel.value = last;
+    const box = document.getElementById("pgWorld"); box.replaceChildren();
+    for (const [name, slots] of Object.entries(world)) {
+      const d = document.createElement("div"); d.className = "pg-cell" + (name === cellSel.value ? " sel" : "");
+      const t = document.createElement("h4"); t.textContent = name; d.appendChild(t);
+      for (const [k, v] of Object.entries(slots)) { const r = document.createElement("div"); r.textContent = `${k}: ${v.startsWith("@") ? "→ " + v.slice(1) : v}`; d.appendChild(r); }
+      d.addEventListener("click", () => { last = name; draw(); });
+      box.appendChild(d);
+    }
+    const l = document.getElementById("pgLog"); l.replaceChildren(...log.slice(-8).map(([text, cls]) => { const s = document.createElement("div"); s.textContent = text; if (cls) s.className = cls; return s; }));
+  };
+  const val = id => document.getElementById(id).value.trim();
+  cellSel.addEventListener("change", () => { last = cellSel.value; draw(); });
+  document.getElementById("pgSet").addEventListener("click", () => {
+    const c = cellSel.value, k = val("pgKey"), v = val("pgVal"); if (!k) return;
+    world[c][k] = v; last = c;
+    log.push([`SET(${c}, ${k}, ${v})`], [`  now GET(${c}, ${k}) == ${v}  ✓`, "ok"]); draw();
+  });
+  document.getElementById("pgGet").addEventListener("click", () => {
+    const c = cellSel.value, k = val("pgKey"); last = c;
+    log.push(k in world[c] ? [`GET(${c}, ${k}) → ${world[c][k]}`] : [`GET(${c}, ${k}) → no such slot`, "bad"]); draw();
+  });
+  document.getElementById("pgErase").addEventListener("click", () => {
+    const c = cellSel.value, k = val("pgKey"); last = c;
+    const had = k in world[c]; delete world[c][k];
+    log.push([`ERASE(${c}, ${k})`], [had ? `  now HAS(${c}, ${k}) == false  ✓` : `  ${k} was not there`, had ? "ok" : "bad"]); draw();
+  });
+  document.getElementById("pgNew").addEventListener("click", () => {
+    const c = "c" + n++; world[c] = { type: "Cell" }; last = c;
+    log.push([`NEW(Cell) → ${c}`], [`  link it: SET(c1, ${"next"}, @${c})`]); draw();
+  });
+  draw();
+}
+
+// ---------- toolfinder ----------
+{
+  const KNOWN = {
+    "1,2,3": [["x + 1", "4"], ["1 + x", "4"], ["x − -1", "4"]],
+    "1,2,4": [["x × 2", "8"], ["2 × x", "8"]],
+    "8,4,2": [["x ÷ 2", "1"]],
+    "1,3,9": [["x × 3", "27"], ["3 × x", "27"]],
+    "1,3,5": [["x + 2", "7"], ["2 + x", "7"], ["x − -2", "7"]],
+    "4,4,4": [["x + 0", "4"], ["x × 1", "4"], ["x ÷ 1", "4"], ["16 ÷ x", "4"], ["8 − x", "4"], ["x − 0", "4"]],
+    "1,2,1,2": [],
+  };
+  const OPS = { Add: "+", Subtract: "−", Multiply: "×", Divide: "÷" };
+  const text = name => { const m = name.match(/^op type op::(\w+) lhs (op variable|-?\d+) rhs (op variable|-?\d+)$/); if (!m) return name; const s = v => v === "op variable" ? "x" : v; return `${s(m[2])} ${OPS[m[1]] || m[1]} ${s(m[3])}`; };
+  const show = (rows, source) => {
+    const out = document.getElementById("tfOut");
+    document.getElementById("tfSource").textContent = source;
+    if (!rows) { out.innerHTML = '<p class="note">Not in the built-in examples. Open this page from the InfoCell viewer to run ToolFinder on any sequence.</p>'; return; }
+    if (!rows.length) { out.innerHTML = '<p class="note">No single tool explains every step.</p>'; return; }
+    const t = document.createElement("table");
+    t.innerHTML = "<thead><tr><th>Tool</th><th>Next value</th></tr></thead>";
+    const b = document.createElement("tbody");
+    rows.forEach(([tool, next]) => { const r = document.createElement("tr"); r.innerHTML = `<td class="mono"></td><td class="mono"></td>`; r.children[0].textContent = tool; r.children[1].textContent = next; b.appendChild(r); });
+    t.appendChild(b); out.replaceChildren(t);
+  };
+  const run = async () => {
+    const seq = document.getElementById("tfSeq").value.split(",").map(s => s.trim()).filter(Boolean);
+    try {
+      const r = await fetch(`/api/toolfinder?sequence=${seq.join(",")}`);
+      if (!r.ok) throw new Error();
+      const d = await r.json();
+      show(d.tools.filter(t => t.fitsAll).map(t => [text(t.tool), t.answer]), "live, from the ToolFinder");
+    } catch { show(KNOWN[seq.join(",")], "recorded ToolFinder results"); }
+  };
+  document.getElementById("tfRun").addEventListener("click", run);
+  run();
+}
+
+// ---------- beam ----------
+{
+  const svg = document.getElementById("bsSvg");
+  const fmt = v => v >= 1e9 ? (v / 1e9).toFixed(1) + " billion" : v >= 1e6 ? (v / 1e6).toFixed(1) + " million" : v >= 1e3 ? Math.round(v / 1e3) + " thousand" : String(Math.round(v));
+  const draw = () => {
+    const k = +bsSteps.value, d = +bsDepth.value, beam = +bsBeam.value;
+    bsStepsV.textContent = k; bsDepthV.textContent = d; bsBeamV.textContent = beam;
+    svg.replaceChildren();
+    const ns = svg.namespaceURI, add = (tag, a, txt) => { const e = document.createElementNS(ns, tag); for (const x in a) e.setAttribute(x, a[x]); if (txt != null) e.textContent = txt; svg.appendChild(e); return e; };
+    const full = [], kept = [];
+    for (let i = 1; i <= d; i++) { full.push(Math.pow(k, i)); kept.push(Math.min(Math.pow(k, i), (i === 1 ? 1 : Math.min(beam, Math.pow(k, i - 1))) * k)); }
+    const maxLog = Math.log10(Math.max(...full, 10)), w = 820 / d;
+    full.forEach((v, i) => {
+      const x = 50 + i * w, hFull = 150 * Math.log10(v + 1) / maxLog, hKept = 150 * Math.log10(kept[i] + 1) / maxLog;
+      add("rect", { x, y: 180 - hFull, width: w * 0.36, height: hFull, fill: "var(--bad)", opacity: 0.55 });
+      add("rect", { x: x + w * 0.4, y: 180 - hKept, width: w * 0.36, height: hKept, fill: "var(--ok)", opacity: 0.8 });
+      add("text", { x: x + w * 0.38, y: 200, "text-anchor": "middle", class: "t-label" }, `depth ${i + 1}`);
+      add("text", { x: x + w * 0.18, y: 174 - hFull, "text-anchor": "middle", class: "t-label" }, fmt(v));
+      add("text", { x: x + w * 0.58, y: 174 - hKept, "text-anchor": "middle", class: "t-label" }, fmt(kept[i]));
+    });
+    add("text", { x: 50, y: 16, class: "t-label" }, "red: every program of that depth · green: what the beam evaluates (log scale)");
+  };
+  [bsSteps, bsDepth, bsBeam].forEach(e => e.addEventListener("input", draw));
+  draw();
+}
+
+// ---------- layers ----------
+{
+  const LAYERS = [
+    ["Pixel cells", "One cell per pixel: x, y, color, and links to the four neighbours.", "given", "given by the grid"],
+    ["Object cells", "Pixels grouped into objects: by color, by touching, by region. Slots such as size, holes, box and shape are computed from the pixels.", "hand", "kinds: hand-written"],
+    ["Relations", "Objects linked to objects: nearest, largest, touching, inside.", "hand", "kinds: hand-written"],
+    ["Fate", "What happens to each object: kept, deleted, moved, rotated, recolored, grown.", "hand", "kinds: hand-written"],
+    ["Rule", "A table from object or pixel slots to fates, chosen from the examples: the shortest one that fits every pair.", "learned", "learned"],
+    ["Composition", "Rules and steps chained into programs: crop, then mirror, then a rule.", "learned", "learned from given steps"],
+    ["Library", "Concepts that explained many tasks get cheaper, so they are tried first.", "learned", "learned"],
+    ["Emergent concepts", "New cells created because they shorten the description: repetition, negative space, parts and wholes.", "next", "next"],
+  ];
+  const box = document.getElementById("layerStack");
+  LAYERS.forEach(([name, text, kind, label]) => {
+    const d = document.createElement("div"); d.className = "layer";
+    d.innerHTML = `<h4></h4><p></p><span class="tag ${kind}"></span>`;
+    d.children[0].textContent = name; d.children[1].textContent = text; d.children[2].textContent = label;
+    box.appendChild(d);
+  });
+}
+</script>
+</body>
+</html>
