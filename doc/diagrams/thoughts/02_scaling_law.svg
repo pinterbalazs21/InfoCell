@@ -1,0 +1,41 @@
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 760 420' width='760' height='420'>
+<rect width='760' height='420' rx='8' fill='#fcfcfb'/>
+<text x='18' y='28' fill='#0b0b0b' font-size='15' font-weight='700' font-family='Inter,Segoe UI,Helvetica,Arial,sans-serif'>Neural scaling law: 100× more parameters → only ~30% lower loss</text>
+<text x='404.0' y='410' text-anchor='middle' fill='#52514e' font-size='12' font-family='Inter,Segoe UI,Helvetica,Arial,sans-serif'>model size N (parameters, log)</text>
+<text transform='translate(16,209.0) rotate(-90)' text-anchor='middle' fill='#52514e' font-size='12' font-family='Inter,Segoe UI,Helvetica,Arial,sans-serif'>test loss (nats/token, log)</text>
+<line x1='78' x2='730' y1='347.5' y2='347.5' stroke='#e4e3df'/>
+<text x='70' y='351.5' text-anchor='end' fill='#52514e' font-size='11' font-family='Inter,Segoe UI,Helvetica,Arial,sans-serif'>1.5</text>
+<line x1='78' x2='730' y1='287.0' y2='287.0' stroke='#e4e3df'/>
+<text x='70' y='291.0' text-anchor='end' fill='#52514e' font-size='11' font-family='Inter,Segoe UI,Helvetica,Arial,sans-serif'>2</text>
+<line x1='78' x2='730' y1='201.7' y2='201.7' stroke='#e4e3df'/>
+<text x='70' y='205.7' text-anchor='end' fill='#52514e' font-size='11' font-family='Inter,Segoe UI,Helvetica,Arial,sans-serif'>3</text>
+<line x1='78' x2='730' y1='141.3' y2='141.3' stroke='#e4e3df'/>
+<text x='70' y='145.3' text-anchor='end' fill='#52514e' font-size='11' font-family='Inter,Segoe UI,Helvetica,Arial,sans-serif'>4</text>
+<line x1='78' x2='730' y1='94.3' y2='94.3' stroke='#e4e3df'/>
+<text x='70' y='98.3' text-anchor='end' fill='#52514e' font-size='11' font-family='Inter,Segoe UI,Helvetica,Arial,sans-serif'>5</text>
+<line x1='78' x2='730' y1='56.0' y2='56.0' stroke='#e4e3df'/>
+<text x='70' y='60.0' text-anchor='end' fill='#52514e' font-size='11' font-family='Inter,Segoe UI,Helvetica,Arial,sans-serif'>6</text>
+<line x1='78.0' x2='78.0' y1='56' y2='362' stroke='#e4e3df'/>
+<text x='78.0' y='380' text-anchor='middle' fill='#52514e' font-size='11' font-family='Inter,Segoe UI,Helvetica,Arial,sans-serif'>10⁶</text>
+<line x1='186.7' x2='186.7' y1='56' y2='362' stroke='#e4e3df'/>
+<text x='186.7' y='380' text-anchor='middle' fill='#52514e' font-size='11' font-family='Inter,Segoe UI,Helvetica,Arial,sans-serif'>10⁷</text>
+<line x1='295.3' x2='295.3' y1='56' y2='362' stroke='#e4e3df'/>
+<text x='295.3' y='380' text-anchor='middle' fill='#52514e' font-size='11' font-family='Inter,Segoe UI,Helvetica,Arial,sans-serif'>10⁸</text>
+<line x1='404.0' x2='404.0' y1='56' y2='362' stroke='#e4e3df'/>
+<text x='404.0' y='380' text-anchor='middle' fill='#52514e' font-size='11' font-family='Inter,Segoe UI,Helvetica,Arial,sans-serif'>10⁹</text>
+<line x1='512.7' x2='512.7' y1='56' y2='362' stroke='#e4e3df'/>
+<text x='512.7' y='380' text-anchor='middle' fill='#52514e' font-size='11' font-family='Inter,Segoe UI,Helvetica,Arial,sans-serif'>10¹⁰</text>
+<line x1='621.3' x2='621.3' y1='56' y2='362' stroke='#e4e3df'/>
+<text x='621.3' y='380' text-anchor='middle' fill='#52514e' font-size='11' font-family='Inter,Segoe UI,Helvetica,Arial,sans-serif'>10¹¹</text>
+<line x1='730.0' x2='730.0' y1='56' y2='362' stroke='#e4e3df'/>
+<text x='730.0' y='380' text-anchor='middle' fill='#52514e' font-size='11' font-family='Inter,Segoe UI,Helvetica,Arial,sans-serif'>10¹²</text>
+<line x1='78' x2='730' y1='362' y2='362' stroke='#52514e' stroke-width='1'/>
+<polyline points='78.0,140.4 88.9,144.1 99.7,147.8 110.6,151.5 121.5,155.1 132.3,158.8 143.2,162.5 154.1,166.2 164.9,169.9 175.8,173.5 186.7,177.2 197.5,180.9 208.4,184.6 219.3,188.3 230.1,191.9 241.0,195.6 251.9,199.3 262.7,203.0 273.6,206.7 284.5,210.3 295.3,214.0 306.2,217.7 317.1,221.4 327.9,225.1 338.8,228.7 349.7,232.4 360.5,236.1 371.4,239.8 382.3,243.5 393.1,247.1 404.0,250.8 414.9,254.5 425.7,258.2 436.6,261.9 447.5,265.5 458.3,269.2 469.2,272.9 480.1,276.6 490.9,280.2 501.8,283.9 512.7,287.6 523.5,291.3 534.4,295.0 545.3,298.6 556.1,302.3 567.0,306.0 577.9,309.7 588.7,313.4 599.6,317.0 610.5,320.7 621.3,324.4 632.2,328.1 643.1,331.8 653.9,335.4 664.8,339.1 675.7,342.8 686.5,346.5 697.4,350.2 708.3,353.8 719.1,357.5 730.0,361.2' fill='none' stroke='#2a78d6' stroke-width='2' stroke-linejoin='round' stroke-linecap='round'/>
+<circle cx='186.7' cy='177.2' r='5' fill='#2a78d6' stroke='#fcfcfb' stroke-width='2'/>
+<circle cx='404.0' cy='250.8' r='5' fill='#2a78d6' stroke='#fcfcfb' stroke-width='2'/>
+<circle cx='621.3' cy='324.4' r='5' fill='#2a78d6' stroke='#fcfcfb' stroke-width='2'/>
+<text x='194.7' y='169.2' text-anchor='start' fill='#0b0b0b' font-size='12' font-weight='normal' font-family='Inter,Segoe UI,Helvetica,Arial,sans-serif'>3.37</text>
+<text x='412.0' y='242.8' text-anchor='start' fill='#0b0b0b' font-size='12' font-weight='normal' font-family='Inter,Segoe UI,Helvetica,Arial,sans-serif'>2.38</text>
+<text x='629.3' y='316.4' text-anchor='start' fill='#0b0b0b' font-size='12' font-weight='normal' font-family='Inter,Segoe UI,Helvetica,Arial,sans-serif'>1.67</text>
+<text x='512.7' y='111.9' text-anchor='middle' fill='#52514e' font-size='12' font-weight='normal' font-family='Inter,Segoe UI,Helvetica,Arial,sans-serif'>L(N) = (Nc / N)^0.076   (Kaplan et al., 2020)</text>
+</svg>

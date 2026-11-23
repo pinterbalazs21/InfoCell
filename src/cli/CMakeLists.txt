@@ -3,6 +3,8 @@ add_library(cli-lib STATIC
     App.h
     CellCommands.cc
     CellCommands.h
+    SolverCommands.cc
+    SolverCommands.h
 )
 
 target_link_libraries(cli-lib
@@ -11,6 +13,7 @@ PUBLIC
     arc-lib
     cells-lib
     config
+    grammar-lib
 )
 
 target_include_directories(cli-lib

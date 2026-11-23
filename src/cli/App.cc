@@ -3,6 +3,7 @@
 
 #include "App.h"
 #include "CellCommands.h"
+#include "SolverCommands.h"
 #include "arc/EdgeDetector.h"
 #include "arc/Task.h"
 #include "Config.h"
@@ -238,6 +239,7 @@ int App::run(int argc, char* argv[])
     });
 
     addCellCommands(*m_app);
+    addSolverCommands(*m_app);
 
     CLI11_PARSE(*m_app, argc, argv);
 

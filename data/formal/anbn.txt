@@ -1,0 +1,10 @@
+# a^n b^n
+ab
+aabb
+aaabbb
+aaaabbbb
+aaaaabbbbb
+aaaaaabbbbbb
+aaaaaaabbbbbbb
+aaaaaaaabbbbbbbb
+aaaaaaaaabbbbbbbbb

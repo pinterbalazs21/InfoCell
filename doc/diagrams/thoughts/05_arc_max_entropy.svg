@@ -1,0 +1,36 @@
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 760 420' width='760' height='420'>
+<rect width='760' height='420' rx='8' fill='#fcfcfb'/>
+<text x='18' y='28' fill='#0b0b0b' font-size='15' font-weight='700' font-family='Inter,Segoe UI,Helvetica,Arial,sans-serif'>Maximum entropy of one ARC grid (uniformly random pixels)</text>
+<text x='404.0' y='410' text-anchor='middle' fill='#52514e' font-size='12' font-family='Inter,Segoe UI,Helvetica,Arial,sans-serif'>grid side length s (s×s grid)</text>
+<text transform='translate(16,209.0) rotate(-90)' text-anchor='middle' fill='#52514e' font-size='12' font-family='Inter,Segoe UI,Helvetica,Arial,sans-serif'>bits = s² · log₂(10)</text>
+<line x1='78' x2='730' y1='362.0' y2='362.0' stroke='#e4e3df'/>
+<text x='70' y='366.0' text-anchor='end' fill='#52514e' font-size='11' font-family='Inter,Segoe UI,Helvetica,Arial,sans-serif'>0</text>
+<line x1='78' x2='730' y1='285.5' y2='285.5' stroke='#e4e3df'/>
+<text x='70' y='289.5' text-anchor='end' fill='#52514e' font-size='11' font-family='Inter,Segoe UI,Helvetica,Arial,sans-serif'>800</text>
+<line x1='78' x2='730' y1='209.0' y2='209.0' stroke='#e4e3df'/>
+<text x='70' y='213.0' text-anchor='end' fill='#52514e' font-size='11' font-family='Inter,Segoe UI,Helvetica,Arial,sans-serif'>1600</text>
+<line x1='78' x2='730' y1='132.5' y2='132.5' stroke='#e4e3df'/>
+<text x='70' y='136.5' text-anchor='end' fill='#52514e' font-size='11' font-family='Inter,Segoe UI,Helvetica,Arial,sans-serif'>2400</text>
+<line x1='78' x2='730' y1='56.0' y2='56.0' stroke='#e4e3df'/>
+<text x='70' y='60.0' text-anchor='end' fill='#52514e' font-size='11' font-family='Inter,Segoe UI,Helvetica,Arial,sans-serif'>3200</text>
+<line x1='78.0' x2='78.0' y1='56' y2='362' stroke='#e4e3df'/>
+<text x='78.0' y='380' text-anchor='middle' fill='#52514e' font-size='11' font-family='Inter,Segoe UI,Helvetica,Arial,sans-serif'>1</text>
+<line x1='167.9' x2='167.9' y1='56' y2='362' stroke='#e4e3df'/>
+<text x='167.9' y='380' text-anchor='middle' fill='#52514e' font-size='11' font-family='Inter,Segoe UI,Helvetica,Arial,sans-serif'>5</text>
+<line x1='280.3' x2='280.3' y1='56' y2='362' stroke='#e4e3df'/>
+<text x='280.3' y='380' text-anchor='middle' fill='#52514e' font-size='11' font-family='Inter,Segoe UI,Helvetica,Arial,sans-serif'>10</text>
+<line x1='392.8' x2='392.8' y1='56' y2='362' stroke='#e4e3df'/>
+<text x='392.8' y='380' text-anchor='middle' fill='#52514e' font-size='11' font-family='Inter,Segoe UI,Helvetica,Arial,sans-serif'>15</text>
+<line x1='505.2' x2='505.2' y1='56' y2='362' stroke='#e4e3df'/>
+<text x='505.2' y='380' text-anchor='middle' fill='#52514e' font-size='11' font-family='Inter,Segoe UI,Helvetica,Arial,sans-serif'>20</text>
+<line x1='617.6' x2='617.6' y1='56' y2='362' stroke='#e4e3df'/>
+<text x='617.6' y='380' text-anchor='middle' fill='#52514e' font-size='11' font-family='Inter,Segoe UI,Helvetica,Arial,sans-serif'>25</text>
+<line x1='730.0' x2='730.0' y1='56' y2='362' stroke='#e4e3df'/>
+<text x='730.0' y='380' text-anchor='middle' fill='#52514e' font-size='11' font-family='Inter,Segoe UI,Helvetica,Arial,sans-serif'>30</text>
+<line x1='78' x2='730' y1='362' y2='362' stroke='#52514e' stroke-width='1'/>
+<polyline points='78.0,361.7 100.5,360.7 123.0,359.1 145.4,356.9 167.9,354.1 190.4,350.6 212.9,346.4 235.4,341.7 257.9,336.3 280.3,330.2 302.8,323.6 325.3,316.3 347.8,308.3 370.3,299.7 392.8,290.5 415.2,280.7 437.7,270.2 460.2,259.1 482.7,247.3 505.2,234.9 527.7,221.9 550.1,208.3 572.6,194.0 595.1,179.0 617.6,163.5 640.1,147.3 662.6,130.4 685.0,113.0 707.5,94.8 730.0,76.1' fill='none' stroke='#2a78d6' stroke-width='2' stroke-linejoin='round' stroke-linecap='round'/>
+<circle cx='280.3' cy='330.2' r='5' fill='#2a78d6' stroke='#fcfcfb' stroke-width='2'/>
+<circle cx='730.0' cy='76.1' r='5' fill='#2a78d6' stroke='#fcfcfb' stroke-width='2'/>
+<text x='720.0' y='80.1' text-anchor='end' fill='#0b0b0b' font-size='12' font-weight='normal' font-family='Inter,Segoe UI,Helvetica,Arial,sans-serif'>30×30 ≈ 2 990 bits ≈ 374 bytes</text>
+<text x='272.3' y='320.2' text-anchor='end' fill='#0b0b0b' font-size='12' font-weight='normal' font-family='Inter,Segoe UI,Helvetica,Arial,sans-serif'>10×10 ≈ 332 bits</text>
+</svg>

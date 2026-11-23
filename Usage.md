@@ -65,6 +65,21 @@ infocell-cli types
 
 Viewer in the browser: `python tools/web/server.py`, then http://127.0.0.1:8765 (see `tools/web/README.md`).
 
+## Solver (experimental)
+
+```
+infocell-cli solve -p ../ARC-AGI/data/training
+infocell-cli explain ../ARC-AGI/data/training/007bbfb7.json --depth 4 --beam 2000
+infocell-cli explain <task.json> --partial
+infocell-cli grammar data/formal/pq.txt
+infocell-cli vocabulary
+```
+
+- `solve`: learn a program per task from its training pairs and score the test outputs; `-i <task-id>`, `-v`, `-c` / `-l` concept prior
+- `explain`: one task as JSON for the viewer; `--partial`: programs learned from single pairs
+- `grammar`: axiom and generator schema from valid strings ([doc/Grammar.md](doc/Grammar.md))
+- Change log and scores: [doc/SolverRules.md](doc/SolverRules.md)
+
 ## Tests
 
 `cellstest`, `ToolFinderTest` and `arctest` in `build/Release/bin/`.

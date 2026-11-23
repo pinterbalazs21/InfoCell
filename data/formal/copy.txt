@@ -1,0 +1,26 @@
+# w c w : a word, a separator, the same word again
+abcab
+bcb
+bbaacbbaa
+abbacabba
+bbaabacbbaaba
+aca
+ababaacababaa
+babacbaba
+abbabacabbaba
+bacba
+bbabbbcbbabbb
+bababcbabab
+abbacabba
+aabbcaabb
+ababcabab
+baaaaacbaaaaa
+abbbbcabbbb
+abacaba
+ababbcababb
+abbbbcabbbb
+abbcabb
+aaaaacaaaaa
+baaaacbaaaa
+ababcabab
+aca

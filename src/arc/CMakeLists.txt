@@ -12,6 +12,13 @@ add_library(arc-lib STATIC
     Grid.h
     Observers.cc
     Observers.h
+    ObjectRules.cc
+    ObjectRules.h
+    Perception.h
+    ProgramSearch.cc
+    ProgramSearch.h
+    RuleInduction.cc
+    RuleInduction.h
     Solver.cc
     Solver.h
     Task.cc
