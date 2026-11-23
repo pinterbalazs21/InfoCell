@@ -1,11 +1,11 @@
-﻿#include "arc/hybridcells/Frame.h"
+#include "EdgeDetector.h"
+#include "arc/Grid.h"
+#include "arc/Task.h"
+#include "arc/hybridcells/Frame.h"
 #include "arc/hybridcells/Grid.h"
 #include "arc/hybridcells/Shape.h"
 #include "arc/hybridcells/ShapeField.h"
 #include "arc/hybridcells/Vector.h"
-#include "arc/Grid.h"
-#include "arc/Task.h"
-#include "EdgeDetector.h"
 
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
 #include "util/Log.h"
@@ -544,45 +544,45 @@ void EdgeDetector::calculateEdgesForShapes()
             CellI& shapePoint      = currentListNodePtr ? (*currentListNodePtr)[id.value] : *currentShapePointPtr;
             int pointX             = static_cast<Number&>(shapePoint["x"]).value();
             int pointY             = static_cast<Number&>(shapePoint["y"]).value();
-#if 0
-  0 1 2 3 4 5 6 7 8
-0 .................
-1 .................     |
-2 ....XX...........   --.--.
-3 .................     |XX|
-4 .................     .--.
-5 .................
-6 .................
-7 .................
+            /*
+              0 1 2 3 4 5 6 7 8
+            0 .................
+            1 .................     |
+            2 ....XX...........   --.--.
+            3 .................     |XX|
+            4 .................     .--.
+            5 .................
+            6 .................
+            7 .................
 
-For leftToRight direction edge from point middle
- 1 0000 Invalid state, can not happen
- 2 1000 Skip
- 3 0100 Skip
- 4 1100 Skip
- 5 0010 Skip
- 6 1010 Skip
- 7 0110 Special
- 8 1110 Start internal edge
- 9 0001 Start external edge
-10 1001 Skip
-11 0101 Skip
-12 1101 Skip
-13 0011 Skip
-14 1011 Skip
-15 0111 Skip
-16 1111 Skip
+            For leftToRight direction edge from point middle
+             1 0000 Invalid state, can not happen
+             2 1000 Skip
+             3 0100 Skip
+             4 1100 Skip
+             5 0010 Skip
+             6 1010 Skip
+             7 0110 Special
+             8 1110 Start internal edge
+             9 0001 Start external edge
+            10 1001 Skip
+            11 0101 Skip
+            12 1101 Skip
+            13 0011 Skip
+            14 1011 Skip
+            15 0111 Skip
+            16 1111 Skip
 
- Invalid  Skip     Skip     Skip     Skip     Skip     Special  New int  New ext Skip      Skip     Skip     Skip     Skip     Skip     Skip
- 1        2        3        4        5        6        7        8        9        10       11       12       13       14       15       16
- 0🡬 0🡭   1🡬 0🡭   0🡬 1🡭   1🡬 1🡭  0🡬 0🡭   1🡬 0🡭   0🡬 1🡭   1🡬 1🡭   0🡬 0🡭  1🡬 0🡭   0🡬 1🡭   1🡬 1🡭   0🡬 0🡭   1🡬 0🡭  0🡬 1🡭   1🡬 1🡭
- 0🡯 0🡮   0🡯 0🡮   0🡯 0🡮   0🡯 0🡮  1🡯 0🡮   1🡯 0🡮   1🡯 0🡮   1🡯 0🡮   0🡯 1🡮  0🡯 1🡮   0🡯 1🡮   0🡯 1🡮   1🡯 1🡮   1🡯 1🡮  1🡯 1🡮   1🡯 1🡮
- ┌──┬──┐  ┌──┬──┐  ┌──┬──┐  ┌──┬──┐  ┌──┬──┐  ┌──┬──┐  ┌──┬──┐  ┌──┬──┐  ┌──┬──┐  ┌──┬──┐  ┌──┬──┐  ┌──┬──┐  ┌──┬──┐  ┌──┬──┐  ┌──┬──┐  ┌──┬──┐
- │  │  │  │██│  │  │  │██│  │██│██│  │  │  │  │██│  │  │  │██│  │██│██│  │  │  │  │██│  │  │  │██│  │██│██│  │  │  │  │██│  │  │  │██│  │██│██│
- ├──∙──►  ├──∙──►  ├──∙──►  ├──∙──►  ├──∙──►  ├──∙──►  ├──∙──►  ├──∙──►  ├──∙──►  ├──∙──►  ├──∙──►  ├──∙──►  ├──∙──►  ├──∙──►  ├──∙──►  ├──∙──►
- │  │  │  │  │  │  │  │  │  │  │  │  │██│  │  │██│  │  │██│  │  │██│  │  │  │██│  │  │██│  │  │██│  │  │██│  │██│██│  │██│██│  │██│██│  │██│██│
- └──┴──┘  └──┴──┘  └──┴──┘  └──┴──┘  └──┴──┘  └──┴──┘  └──┴──┘  └──┴──┘  └──┴──┘  └──┴──┘  └──┴──┘  └──┴──┘  └──┴──┘  └──┴──┘  └──┴──┘  └──┴──┘
-#endif
+             Invalid  Skip     Skip     Skip     Skip     Skip     Special  New int  New ext Skip      Skip     Skip     Skip     Skip     Skip     Skip
+             1        2        3        4        5        6        7        8        9        10       11       12       13       14       15       16
+             0🡬 0🡭   1🡬 0🡭   0🡬 1🡭   1🡬 1🡭  0🡬 0🡭   1🡬 0🡭   0🡬 1🡭   1🡬 1🡭   0🡬 0🡭  1🡬 0🡭   0🡬 1🡭   1🡬 1🡭   0🡬 0🡭   1🡬 0🡭  0🡬 1🡭   1🡬 1🡭
+             0🡯 0🡮   0🡯 0🡮   0🡯 0🡮   0🡯 0🡮  1🡯 0🡮   1🡯 0🡮   1🡯 0🡮   1🡯 0🡮   0🡯 1🡮  0🡯 1🡮   0🡯 1🡮   0🡯 1🡮   1🡯 1🡮   1🡯 1🡮  1🡯 1🡮   1🡯 1🡮
+             ┌──┬──┐  ┌──┬──┐  ┌──┬──┐  ┌──┬──┐  ┌──┬──┐  ┌──┬──┐  ┌──┬──┐  ┌──┬──┐  ┌──┬──┐  ┌──┬──┐  ┌──┬──┐  ┌──┬──┐  ┌──┬──┐  ┌──┬──┐  ┌──┬──┐  ┌──┬──┐
+             │  │  │  │██│  │  │  │██│  │██│██│  │  │  │  │██│  │  │  │██│  │██│██│  │  │  │  │██│  │  │  │██│  │██│██│  │  │  │  │██│  │  │  │██│  │██│██│
+             ├──∙──►  ├──∙──►  ├──∙──►  ├──∙──►  ├──∙──►  ├──∙──►  ├──∙──►  ├──∙──►  ├──∙──►  ├──∙──►  ├──∙──►  ├──∙──►  ├──∙──►  ├──∙──►  ├──∙──►  ├──∙──►
+             │  │  │  │  │  │  │  │  │  │  │  │  │██│  │  │██│  │  │██│  │  │██│  │  │  │██│  │  │██│  │  │██│  │  │██│  │██│██│  │██│██│  │██│██│  │██│██│
+             └──┴──┘  └──┴──┘  └──┴──┘  └──┴──┘  └──┴──┘  └──┴──┘  └──┴──┘  └──┴──┘  └──┴──┘  └──┴──┘  └──┴──┘  └──┴──┘  └──┴──┘  └──┴──┘  └──┴──┘  └──┴──┘
+            */
 
             bool hasUpLeft    = shapePoint.has("upLeftPixel") && (&shapePoint["upLeftPixel"]["shape"] == &currentShape);       // 🡬
             bool hasUpRight   = shapePoint.has("upRightPixel") && (&shapePoint["upRightPixel"]["shape"] == &currentShape);     // 🡭
@@ -1693,62 +1693,62 @@ void EdgeDetector::findPossibleBackgroundWithShapes()
         CellI& backgroundShape = *backgroundShapePtr;
         INFO(shapeRelations, "    shape id {} can be a background as it contains all other shapes!", backgroundShape["id"].label());
     }
-#if 0
-        Next approach:
-        We need a shape assessment process
+    /*
+            Next approach:
+            We need a shape assessment process
 
-            - a shape can be inside an other shape
-                0   1  2
-              ┌──┬──┬──┐
-            0 │❶ │❶ │❶ │
-              ├──∙──∙──┤
-            1 │❶ │❷ │❶ │
-              ├──∙──∙──┤
-            2 │❶ │❶ │❶ │
-              └──┴──┴──┘
-            - a shape can contains an other one
-                0   1  2    3  4
-              ┌──┬──┬──┬──┬──┐
-            0 │❶ │❶ │❷ │❶ │❶ │
-              ├──∙──∙──∙──∙──┤
-            1 │❶ │❷ │❸ │❷ │❶ │
-              ├──∙──∙──∙──∙──┤
-            2 │❶ │❶ │❷ │❶ │❶ │
-              ├──∙──∙──∙──∙──┤
-            3 │❶ │❶ │❶ │❶ │❶ │
-              └──┴──┴──┴──┴──┘
-            - backround can extend if the color is the same
-                0   1  2    3  4
-              ┌──┬──┬──┬──┬──┐
-            0 │❶ │❶ │❶ │❶ │❶ │
-              ├──∙──∙──∙──∙──┤
-            1 │❷ │❶ │❷ │❶ │❶ │
-              ├──∙──∙──∙──∙──┤
-            2 │❶ │❸ │❶ │❶ │❶ │
-              ├──∙──∙──∙──∙──┤
-            3 │❷ │❶ │❷ │❶ │❶ │
-              └──┴──┴──┴──┴──┘
-        An other idea:
-          if a shape contains other ones, lets examine it even more
-          so if this shape touch four external same edge (or missing external edges)
-              then calculate the conatined (between external edges) shapes also
-              - maybe just assume that the external edge is, where it has the most contact when doesn't contain it?
-          also we can shortcut in this case and pretend, that the external shape edge is the full edge
-              we need a frame object wich has the edge of the input grid
+                - a shape can be inside an other shape
+                    0   1  2
+                  ┌──┬──┬──┐
+                0 │❶ │❶ │❶ │
+                  ├──∙──∙──┤
+                1 │❶ │❷ │❶ │
+                  ├──∙──∙──┤
+                2 │❶ │❶ │❶ │
+                  └──┴──┴──┘
+                - a shape can contains an other one
+                    0   1  2    3  4
+                  ┌──┬──┬──┬──┬──┐
+                0 │❶ │❶ │❷ │❶ │❶ │
+                  ├──∙──∙──∙──∙──┤
+                1 │❶ │❷ │❸ │❷ │❶ │
+                  ├──∙──∙──∙──∙──┤
+                2 │❶ │❶ │❷ │❶ │❶ │
+                  ├──∙──∙──∙──∙──┤
+                3 │❶ │❶ │❶ │❶ │❶ │
+                  └──┴──┴──┴──┴──┘
+                - backround can extend if the color is the same
+                    0   1  2    3  4
+                  ┌──┬──┬──┬──┬──┐
+                0 │❶ │❶ │❶ │❶ │❶ │
+                  ├──∙──∙──∙──∙──┤
+                1 │❷ │❶ │❷ │❶ │❶ │
+                  ├──∙──∙──∙──∙──┤
+                2 │❶ │❸ │❶ │❶ │❶ │
+                  ├──∙──∙──∙──∙──┤
+                3 │❷ │❶ │❷ │❶ │❶ │
+                  └──┴──┴──┴──┴──┘
+            An other idea:
+              if a shape contains other ones, lets examine it even more
+              so if this shape touch four external same edge (or missing external edges)
+                  then calculate the conatined (between external edges) shapes also
+                  - maybe just assume that the external edge is, where it has the most contact when doesn't contain it?
+              also we can shortcut in this case and pretend, that the external shape edge is the full edge
+                  we need a frame object wich has the edge of the input grid
 
-       Ok, so looks like there isn't any perfect algorithm to detect a background, but we collect clues about it
+           Ok, so looks like there isn't any perfect algorithm to detect a background, but we collect clues about it
 
-       One heuristic algo is, to predict the background real external edges by take into account the most "touched" edges.
+           One heuristic algo is, to predict the background real external edges by take into account the most "touched" edges.
 
-       An other clue is that what is fix and what is changing.
+           An other clue is that what is fix and what is changing.
 
-#endif
+    */
 }
 
 hybridarc::ShapeField& EdgeDetector::createResult()
 {
-    int width = static_cast<Number&>(frame().get(id.width)).value();
-    int height = static_cast<Number&>(frame().get(id.height)).value();
+    int width        = static_cast<Number&>(frame().get(id.width)).value();
+    int height       = static_cast<Number&>(frame().get(id.height)).value();
     auto& shapeField = *new hybridarc::ShapeField(w, width, height);
 
     for (CellI& currentShape : frame()["shapes"]) {
@@ -1764,15 +1764,15 @@ hybridarc::ShapeField& EdgeDetector::createResult()
         int i = 0;
         for (CellI& currentEdgeKV : currentShape["edges"]) {
             CellI& currentEdge = currentEdgeKV[id.value];
-            List* outEdgePtr = nullptr;
+            List* outEdgePtr   = nullptr;
             // the first edge is the external edge
             if (i++ == 0) {
                 outEdgePtr = &externalEdgeLine;
             } else {
-                Number& x                  = static_cast<Number&>(currentEdge["fromExternalX"]);
-                Number& y                  = static_cast<Number&>(currentEdge["fromExternalY"]);
-                hybridarc::Vector& offset  = *new hybridarc::Vector(w, x, y);
-                List& internalEdgeLine     = *new List(w, arc.Direction);
+                Number& x                 = static_cast<Number&>(currentEdge["fromExternalX"]);
+                Number& y                 = static_cast<Number&>(currentEdge["fromExternalY"]);
+                hybridarc::Vector& offset = *new hybridarc::Vector(w, x, y);
+                List& internalEdgeLine    = *new List(w, arc.Direction);
                 internalEdges.addWithDataKey(offset, internalEdgeLine);
                 outEdgePtr = &internalEdgeLine;
             }
@@ -1800,16 +1800,16 @@ hybridarc::ShapeField& EdgeDetector::createResult()
 } // namespace arc
 } // namespace infocell
 
-    /*
+/*
 Tasks
 
 Object uniqueness
 
-   So we should create a primaryKey()->List or contentList()->List like method maybe behind an interface. Or every object should inherit from an object interface.
-   Can we autogenerate this, by indicate the uniquness of objects somehow?
+So we should create a primaryKey()->List or contentList()->List like method maybe behind an interface. Or every object should inherit from an object interface.
+Can we autogenerate this, by indicate the uniquness of objects somehow?
 
-   Primary use case to be able to put elements to a containers. So we have to ArcGrid with the same size. One of them contains extra pixels.
-   So the strategy is to put every pixels to a container and look up those pixels from the other grid. Maybe the ArcGrid should be a container already?
+Primary use case to be able to put elements to a containers. So we have to ArcGrid with the same size. One of them contains extra pixels.
+So the strategy is to put every pixels to a container and look up those pixels from the other grid. Maybe the ArcGrid should be a container already?
 
 
 */

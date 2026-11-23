@@ -1,3 +1,5 @@
 .vs
 build/
 conan/
+venv/
+.venv/

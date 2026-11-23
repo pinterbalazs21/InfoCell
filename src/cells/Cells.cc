@@ -2,6 +2,7 @@
 #include "OpActivator.h"
 #include "World.h"
 
+#include <algorithm>
 #include <utility>
 
 #pragma warning(disable : 4996)

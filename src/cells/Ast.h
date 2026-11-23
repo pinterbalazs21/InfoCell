@@ -31,7 +31,6 @@ public:
         Base(World& w, CellI& classCell, const std::string& label = "");
     };
 
-    class Equal;
     template <typename T>
     class BaseT : public Base,
                   public NewT<T>
@@ -41,13 +40,6 @@ public:
             Base(w, classCell, label)
         {
         }
-
-    public:
-        Equal& operator==(Base& rhs) const
-        {
-            return Equal::New(w, const_cast<BaseT<T>&>(*this), rhs);
-        }
-        Equal& operator!=(Base& rhs) const;
     };
 
 // ============================================================================

@@ -44,4 +44,5 @@ target_link_libraries(cells-lib
         utf8cpp
         cells-printers
         util
+        arc-lib
 )

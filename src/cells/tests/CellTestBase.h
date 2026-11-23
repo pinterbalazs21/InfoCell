@@ -151,6 +151,7 @@ protected:
         if constexpr (sizeof...(Args) > 0) {
             addParameter(map, std::forward<Args>(args)...);
         }
+        return map;
     }
 
     static std::unique_ptr<World> m_world;
